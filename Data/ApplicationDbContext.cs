@@ -19,6 +19,7 @@ namespace cem.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            // Configurazioni per le proprietà e le relazioni
             modelBuilder.Entity<Expense>()
                 .Property(e => e.Amount)
                 .HasPrecision(18, 2);
@@ -50,6 +51,90 @@ namespace cem.Data
                 .WithMany()
                 .HasForeignKey(n => n.ExpenseId)
                 .OnDelete(DeleteBehavior.Cascade);
+                
+            // Aggiungi i dati di seed per i condomini
+            modelBuilder.Entity<Condominium>().HasData(
+                new Condominium
+                {
+                    Id = 1,
+                    Name = "Condominio A",
+                    Address = "Via Roma 1",
+                    City = "Milano",
+                    Province = "MI",
+                    PostalCode = "20100",
+                    CreationDate = new DateTime(2023, 10, 1) // Valore statico
+                },
+                new Condominium
+                {
+                    Id = 2,
+                    Name = "Condominio B",
+                    Address = "Via Dante 2",
+                    City = "Torino",
+                    Province = "TO",
+                    PostalCode = "10100",
+                    CreationDate = new DateTime(2023, 10, 1) // Valore statico
+                }
+            );
+
+            // Aggiungi i dati di seed per gli utenti
+            modelBuilder.Entity<User>().HasData(
+                new User
+                {
+                    Id = 1,
+                    Username = "admin",
+                    Email = "admin@example.com",
+                    PasswordHash = "hashed_password_here", // Usa un hash reale
+                    Role = UserRole.Admin,
+                    FirstName = "Admin",
+                    LastName = "User",
+                    CreatedAt = new DateTime(2023, 10, 1) // Valore statico
+                },
+                new User
+                {
+                    Id = 2,
+                    Username = "manager1",
+                    Email = "manager1@example.com",
+                    PasswordHash = "hashed_password_here", // Usa un hash reale
+                    Role = UserRole.CondominiumManager,
+                    FirstName = "Manager",
+                    LastName = "One",
+                    CreatedAt = new DateTime(2023, 10, 1) // Valore statico
+                }
+            );
+
+            // Aggiungi i dati di seed per le spese
+            modelBuilder.Entity<Expense>().HasData(
+                new Expense
+                {
+                    Id = 1,
+                    Description = "Pulizia scale",
+                    Amount = 100.50m,
+                    Date = new DateTime(2023, 10, 1), // Valore statico
+                    Type = "Manutenzione",
+                    Status = ExpenseStatus.Pending,
+                    CondominiumId = 1,
+                    CreatedById = 2,
+                    CreatedAt = new DateTime(2023, 10, 1), // Valore statico
+                    Condominium = null, // Inizializza con null (o con un oggetto valido se necessario)
+                    CreatedBy = null    // Inizializza con null (o con un oggetto valido se necessario)
+                }
+            );
+
+            // Aggiungi i dati di seed per le notifiche
+            modelBuilder.Entity<Notification>().HasData(
+                new Notification
+                {
+                    Id = 1,
+                    Title = "Nuova spesa",
+                    Message = "Una nuova spesa è stata creata.",
+                    Type = NotificationType.ExpenseApproved,
+                    UserId = 2,
+                    ExpenseId = 1,
+                    CreatedAt = new DateTime(2023, 10, 1), // Valore statico
+                    User = null,    // Inizializza con null (o con un oggetto valido se necessario)
+                    Expense = null  // Inizializza con null (o con un oggetto valido se necessario)
+                }
+            );
         }
     }
 }
