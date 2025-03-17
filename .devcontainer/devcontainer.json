@@ -1,0 +1,17 @@
+{
+    "name": "Condominium Manager Dev",
+    "dockerComposeFile": "../docker-compose.yml",
+    "service": "app",
+    "workspaceFolder": "/app",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-dotnettools.csharp",
+                "ms-mssql.mssql",
+                "ms-dotnettools.blazor-debugging"
+            ]
+        }
+    },
+    "forwardPorts": [5000, 5001, 1433],
+    "postCreateCommand": "dotnet restore"
+} 
