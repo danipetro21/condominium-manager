@@ -37,17 +37,17 @@
 </MudContainer>
 
 @code {
-    private LoginModel loginModel = new() { Email = "", Password = "" };
+    private LoginModel loginModel = new() { Email = string.Empty, Password = string.Empty };
     private string? errorMessage;
 
     private class LoginModel
     {
         [Required(ErrorMessage = "L'email è obbligatoria")]
         [EmailAddress(ErrorMessage = "Formato email non valido")]
-        public string Email { get; set; }
+        public string Email { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "La password è obbligatoria")]
-        public string Password { get; set; }
+        public string Password { get; set; } = string.Empty;
     }
 
     private async Task HandleLogin()
