@@ -1,12 +1,31 @@
-﻿<Router AppAssembly="@typeof(App).Assembly">
+﻿<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<Router AppAssembly="@typeof(App).Assembly">
     <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
-        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+            <NotAuthorized>
+                <MudContainer MaxWidth="MaxWidth.Small" Class="mt-10">
+                    <MudPaper Elevation="10" Class="pa-8">
+                        <MudText Typo="Typo.h4" Class="mb-4">Accesso negato</MudText>
+                        <MudText Typo="Typo.body1" Class="mb-4">Non hai i permessi necessari per accedere a questa pagina.</MudText>
+                        <MudButton Color="Color.Primary" Href="/login" FullWidth="true">Accedi</MudButton>
+                    </MudPaper>
+                </MudContainer>
+            </NotAuthorized>
+        </AuthorizeRouteView>
     </Found>
     <NotFound>
         <PageTitle>Not found</PageTitle>
         <LayoutView Layout="@typeof(MainLayout)">
-            <p role="alert">Sorry, there's nothing at this address.</p>
+            <MudContainer MaxWidth="MaxWidth.Small" Class="mt-10">
+                <MudPaper Elevation="10" Class="pa-8">
+                    <MudText Typo="Typo.h4" Class="mb-4">Pagina non trovata</MudText>
+                    <MudText Typo="Typo.body1" Class="mb-4">La pagina che stai cercando non esiste.</MudText>
+                    <MudButton Color="Color.Primary" Href="/" FullWidth="true">Torna alla home</MudButton>
+                </MudPaper>
+            </MudContainer>
         </LayoutView>
     </NotFound>
 </Router>

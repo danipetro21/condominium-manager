@@ -123,8 +123,8 @@ namespace cem.Data
                     CondominiumId = 1,
                     CreatedById = 2,
                     CreatedAt = new DateTime(2025, 10, 1),
-                    Condominium = null,
-                    CreatedBy = null,
+                    Condominium = null!,
+                    CreatedBy = null!
                 }
             );
 
@@ -138,8 +138,8 @@ namespace cem.Data
                     UserId = 2,
                     ExpenseId = 1,
                     CreatedAt = new DateTime(2025, 10, 1),
-                    User = null,
-                    Expense = null,
+                    User = null!,
+                    Expense = null!
                 }
             );
         }

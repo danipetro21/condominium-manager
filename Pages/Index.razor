@@ -1,9 +1,11 @@
 ﻿@page "/"
+@attribute [Authorize]
 
-<PageTitle>Index</PageTitle>
+<PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
-
-Welcome to your new app.
-
-<SurveyPrompt Title="How is Blazor working for you?" />
+<MudContainer>
+    <MudText Typo="Typo.h3" Class="mb-4">Benvenuto in CEM</MudText>
+    <MudText Typo="Typo.body1">
+        Sistema di gestione condominiale
+    </MudText>
+</MudContainer>

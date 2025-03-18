@@ -1,19 +1,47 @@
 ﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
+@using cem.Services
 
-<PageTitle>cem</PageTitle>
+<MudLayout>
+    <MudAppBar Color="Color.Primary" Elevation="4">
+        <MudText Typo="Typo.h6" Class="ml-2">CEM App</MudText>
+        <MudSpacer />
+        <AuthorizeView>
+            <Authorized>
+                <MudText Typo="Typo.body1" Class="mr-2">Ciao, @context.User.Identity.Name!</MudText>
+                <MudButton Color="Color.Error" Variant="Variant.Text" OnClick="Logout">
+                    Logout
+                </MudButton>
+            </Authorized>
+            <NotAuthorized>
+                <MudButton Color="Color.Primary" Variant="Variant.Text" Href="/login">
+                    Login
+                </MudButton>
+            </NotAuthorized>
+        </AuthorizeView>
+    </MudAppBar>
 
-<div class="page">
-    <div class="sidebar">
+    <MudDrawer Open="true" ClipMode="DrawerClipMode.Always" Elevation="4">
         <NavMenu />
-    </div>
+    </MudDrawer>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
-        </div>
-
-        <article class="content px-4">
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pt-4">
             @Body
-        </article>
-    </main>
-</div>
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    [Inject]
+    private AuthService AuthService { get; set; }
+
+    [Inject]
+    private NavigationManager Navigation { get; set; }
+
+    private async Task Logout()
+    {
+        await AuthService.LogoutAsync();
+        Navigation.NavigateTo("/login");
+    }
+}
