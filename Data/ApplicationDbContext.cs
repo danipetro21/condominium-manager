@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using cem.Data.Models;
+using cem.Models;
 
 namespace cem.Data
 {
@@ -14,19 +14,25 @@ namespace cem.Data
         public DbSet<Condominium> Condominiums { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Notification> Notifications { get; set; }
+        public DbSet<Role> Roles { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Configurazioni per le proprietà e le relazioni
             modelBuilder.Entity<Expense>()
                 .Property(e => e.Amount)
                 .HasPrecision(18, 2);
 
             modelBuilder.Entity<User>()
                 .HasMany(u => u.ManagedCondominiums)
-                .WithMany(c => c.Managers);
+                .WithMany(c => c.Managers)
+                .UsingEntity(j => j.ToTable("UserCondominiums"));
+
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.Role)
+                .WithMany(r => r.Users)
+                .HasForeignKey(u => u.RoleId);
 
             modelBuilder.Entity<Expense>()
                 .HasOne(e => e.CreatedBy)
@@ -51,8 +57,37 @@ namespace cem.Data
                 .WithMany()
                 .HasForeignKey(n => n.ExpenseId)
                 .OnDelete(DeleteBehavior.Cascade);
-                
-            // Aggiungi i dati di seed per i condomini
+
+            modelBuilder.Entity<Role>().HasData(
+                new Role { Id = 1, Name = "Master" },
+                new Role { Id = 2, Name = "Manager" }
+            );
+
+            modelBuilder.Entity<User>().HasData(
+                new User
+                {
+                    Id = 1,
+                    Username = "master",
+                    Email = "master@cem.com",
+                    PasswordHash = "hashed_password",
+                    FirstName = "Master",
+                    LastName = "Supremo",
+                    RoleId = 1,
+                    CreatedAt = new DateTime(2025, 10, 1)
+                },
+                new User
+                {
+                    Id = 2,
+                    Username = "manager",
+                    Email = "manager@cem.com",
+                    PasswordHash = "hashed_password",
+                    FirstName = "Manager",
+                    LastName = "Basic",
+                    RoleId = 2,
+                    CreatedAt = new DateTime(2025, 10, 1)
+                }
+            );
+
             modelBuilder.Entity<Condominium>().HasData(
                 new Condominium
                 {
@@ -62,7 +97,7 @@ namespace cem.Data
                     City = "Milano",
                     Province = "MI",
                     PostalCode = "20100",
-                    CreationDate = new DateTime(2023, 10, 1) // Valore statico
+                    CreationDate = new DateTime(2025, 10, 1)
                 },
                 new Condominium
                 {
@@ -72,55 +107,27 @@ namespace cem.Data
                     City = "Torino",
                     Province = "TO",
                     PostalCode = "10100",
-                    CreationDate = new DateTime(2023, 10, 1) // Valore statico
+                    CreationDate = new DateTime(2025, 10, 1)
                 }
             );
 
-            // Aggiungi i dati di seed per gli utenti
-            modelBuilder.Entity<User>().HasData(
-                new User
-                {
-                    Id = 1,
-                    Username = "admin",
-                    Email = "admin@example.com",
-                    PasswordHash = "hashed_password_here", // Usa un hash reale
-                    Role = UserRole.Admin,
-                    FirstName = "Admin",
-                    LastName = "User",
-                    CreatedAt = new DateTime(2023, 10, 1) // Valore statico
-                },
-                new User
-                {
-                    Id = 2,
-                    Username = "manager1",
-                    Email = "manager1@example.com",
-                    PasswordHash = "hashed_password_here", // Usa un hash reale
-                    Role = UserRole.CondominiumManager,
-                    FirstName = "Manager",
-                    LastName = "One",
-                    CreatedAt = new DateTime(2023, 10, 1) // Valore statico
-                }
-            );
-
-            // Aggiungi i dati di seed per le spese
             modelBuilder.Entity<Expense>().HasData(
                 new Expense
                 {
                     Id = 1,
                     Description = "Pulizia scale",
                     Amount = 100.50m,
-                    Date = new DateTime(2023, 10, 1), // Valore statico
+                    Date = new DateTime(2025, 10, 1),
                     Type = "Manutenzione",
                     Status = ExpenseStatus.Pending,
                     CondominiumId = 1,
                     CreatedById = 2,
-                    CreatedAt = new DateTime(2023, 10, 1), // Valore statico
-                    Condominium = null, // Inizializza con null (o con un oggetto valido se necessario)
-                    CreatedBy = null    // Inizializza con null (o con un oggetto valido se necessario)
+                    CreatedAt = new DateTime(2025, 10, 1),
+                    Condominium = null,
+                    CreatedBy = null,
                 }
             );
 
-            // Aggiungi i dati di seed per le notifiche
             modelBuilder.Entity<Notification>().HasData(
                 new Notification
                 {
@@ -130,9 +137,9 @@ namespace cem.Data
                     Type = NotificationType.ExpenseApproved,
                     UserId = 2,
                     ExpenseId = 1,
-                    CreatedAt = new DateTime(2023, 10, 1), // Valore statico
-                    User = null,    // Inizializza con null (o con un oggetto valido se necessario)
-                    Expense = null  // Inizializza con null (o con un oggetto valido se necessario)
+                    CreatedAt = new DateTime(2025, 10, 1),
+                    User = null,
+                    Expense = null,
                 }
             );
         }

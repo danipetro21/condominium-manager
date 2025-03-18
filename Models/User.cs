@@ -1,13 +1,8 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace cem.Data.Models
+namespace cem.Models
 {
-    public enum UserRole
-    {
-        Admin,
-        CondominiumManager
-    }
-
     public class User
     {
         public int Id { get; set; }
@@ -24,9 +19,6 @@ namespace cem.Data.Models
         public required string PasswordHash { get; set; }
 
         [Required]
-        public UserRole Role { get; set; }
-
-        [Required]
         [StringLength(100)]
         public required string FirstName { get; set; }
 
@@ -36,7 +28,10 @@ namespace cem.Data.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        // Relazione con i condomini gestiti (solo per i CondominiumManager)
+        public int RoleId { get; set; }
+
+        public Role Role { get; set; } 
+
         public virtual ICollection<Condominium> ManagedCondominiums { get; set; } = new List<Condominium>();
     }
-} 
+}

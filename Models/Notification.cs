@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace cem.Data.Models
+namespace cem.Models
 {
     public enum NotificationType
     {

@@ -1,7 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace cem.Data.Models
+namespace cem.Models
 {
     public enum ExpenseStatus
     {
@@ -40,15 +40,12 @@ namespace cem.Data.Models
 
         public string? RejectionReason { get; set; }
 
-        // Relazione con il condominio
         public int CondominiumId { get; set; }
         public required Condominium Condominium { get; set; }
 
-        // Relazione con l'utente che ha creato la spesa
         public int CreatedById { get; set; }
         public required User CreatedBy { get; set; }
 
-        // Relazione con l'utente che ha approvato/rifiutato la spesa
         public int? ApprovedById { get; set; }
         public virtual User? ApprovedBy { get; set; }
     }

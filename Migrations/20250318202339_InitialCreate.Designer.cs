@@ -12,8 +12,8 @@ using cem.Data;
 namespace cem.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250317224722_SeedData")]
-    partial class SeedData
+    [Migration("20250318202339_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -37,10 +37,10 @@ namespace cem.Migrations
 
                     b.HasIndex("ManagersId");
 
-                    b.ToTable("CondominiumUser");
+                    b.ToTable("UserCondominiums", (string)null);
                 });
 
-            modelBuilder.Entity("cem.Data.Models.Condominium", b =>
+            modelBuilder.Entity("cem.Models.Condominium", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -86,7 +86,7 @@ namespace cem.Migrations
                             Id = 1,
                             Address = "Via Roma 1",
                             City = "Milano",
-                            CreationDate = new DateTime(2023, 10, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreationDate = new DateTime(2025, 10, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Condominio A",
                             PostalCode = "20100",
                             Province = "MI"
@@ -96,14 +96,14 @@ namespace cem.Migrations
                             Id = 2,
                             Address = "Via Dante 2",
                             City = "Torino",
-                            CreationDate = new DateTime(2023, 10, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreationDate = new DateTime(2025, 10, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Condominio B",
                             PostalCode = "10100",
                             Province = "TO"
                         });
                 });
 
-            modelBuilder.Entity("cem.Data.Models.Expense", b =>
+            modelBuilder.Entity("cem.Models.Expense", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -168,16 +168,16 @@ namespace cem.Migrations
                             Id = 1,
                             Amount = 100.50m,
                             CondominiumId = 1,
-                            CreatedAt = new DateTime(2023, 10, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 10, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             CreatedById = 2,
-                            Date = new DateTime(2023, 10, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Date = new DateTime(2025, 10, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Pulizia scale",
                             Status = 0,
                             Type = "Manutenzione"
                         });
                 });
 
-            modelBuilder.Entity("cem.Data.Models.Notification", b =>
+            modelBuilder.Entity("cem.Models.Notification", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -220,7 +220,7 @@ namespace cem.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2023, 10, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 10, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             ExpenseId = 1,
                             Message = "Una nuova spesa è stata creata.",
                             Title = "Nuova spesa",
@@ -229,7 +229,37 @@ namespace cem.Migrations
                         });
                 });
 
-            modelBuilder.Entity("cem.Data.Models.User", b =>
+            modelBuilder.Entity("cem.Models.Role", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Roles");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Name = "Master"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Name = "Manager"
+                        });
+                });
+
+            modelBuilder.Entity("cem.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -259,7 +289,7 @@ namespace cem.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("Role")
+                    b.Property<int>("RoleId")
                         .HasColumnType("int");
 
                     b.Property<string>("Username")
@@ -269,62 +299,64 @@ namespace cem.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("RoleId");
+
                     b.ToTable("Users");
 
                     b.HasData(
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2023, 10, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Email = "admin@example.com",
-                            FirstName = "Admin",
-                            LastName = "User",
-                            PasswordHash = "hashed_password_here",
-                            Role = 0,
-                            Username = "admin"
+                            CreatedAt = new DateTime(2025, 10, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Email = "master@cem.com",
+                            FirstName = "Master",
+                            LastName = "Supremo",
+                            PasswordHash = "hashed_password",
+                            RoleId = 1,
+                            Username = "master"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2023, 10, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Email = "manager1@example.com",
+                            CreatedAt = new DateTime(2025, 10, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Email = "manager@cem.com",
                             FirstName = "Manager",
-                            LastName = "One",
-                            PasswordHash = "hashed_password_here",
-                            Role = 1,
-                            Username = "manager1"
+                            LastName = "Basic",
+                            PasswordHash = "hashed_password",
+                            RoleId = 2,
+                            Username = "manager"
                         });
                 });
 
             modelBuilder.Entity("CondominiumUser", b =>
                 {
-                    b.HasOne("cem.Data.Models.Condominium", null)
+                    b.HasOne("cem.Models.Condominium", null)
                         .WithMany()
                         .HasForeignKey("ManagedCondominiumsId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("cem.Data.Models.User", null)
+                    b.HasOne("cem.Models.User", null)
                         .WithMany()
                         .HasForeignKey("ManagersId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("cem.Data.Models.Expense", b =>
+            modelBuilder.Entity("cem.Models.Expense", b =>
                 {
-                    b.HasOne("cem.Data.Models.User", "ApprovedBy")
+                    b.HasOne("cem.Models.User", "ApprovedBy")
                         .WithMany()
                         .HasForeignKey("ApprovedById")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("cem.Data.Models.Condominium", "Condominium")
+                    b.HasOne("cem.Models.Condominium", "Condominium")
                         .WithMany("Expenses")
                         .HasForeignKey("CondominiumId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("cem.Data.Models.User", "CreatedBy")
+                    b.HasOne("cem.Models.User", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedById")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -337,14 +369,14 @@ namespace cem.Migrations
                     b.Navigation("CreatedBy");
                 });
 
-            modelBuilder.Entity("cem.Data.Models.Notification", b =>
+            modelBuilder.Entity("cem.Models.Notification", b =>
                 {
-                    b.HasOne("cem.Data.Models.Expense", "Expense")
+                    b.HasOne("cem.Models.Expense", "Expense")
                         .WithMany()
                         .HasForeignKey("ExpenseId")
                         .OnDelete(DeleteBehavior.Cascade);
 
-                    b.HasOne("cem.Data.Models.User", "User")
+                    b.HasOne("cem.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -355,9 +387,25 @@ namespace cem.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("cem.Data.Models.Condominium", b =>
+            modelBuilder.Entity("cem.Models.User", b =>
+                {
+                    b.HasOne("cem.Models.Role", "Role")
+                        .WithMany("Users")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("cem.Models.Condominium", b =>
                 {
                     b.Navigation("Expenses");
+                });
+
+            modelBuilder.Entity("cem.Models.Role", b =>
+                {
+                    b.Navigation("Users");
                 });
 #pragma warning restore 612, 618
         }

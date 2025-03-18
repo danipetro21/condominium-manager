@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
-namespace cem.Data.Models
+namespace cem.Models
 {
     public class Condominium
     {
