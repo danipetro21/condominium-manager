@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
 namespace cem.Migrations
 {
     /// <inheritdoc />
@@ -30,6 +32,19 @@ namespace cem.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Roles",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Roles", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Users",
                 columns: table => new
                 {
@@ -38,36 +53,18 @@ namespace cem.Migrations
                     Username = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Email = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     PasswordHash = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Role = table.Column<int>(type: "int", nullable: false),
                     FirstName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     LastName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    RoleId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Users", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "CondominiumUser",
-                columns: table => new
-                {
-                    ManagedCondominiumsId = table.Column<int>(type: "int", nullable: false),
-                    ManagersId = table.Column<int>(type: "int", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_CondominiumUser", x => new { x.ManagedCondominiumsId, x.ManagersId });
                     table.ForeignKey(
-                        name: "FK_CondominiumUser_Condominiums_ManagedCondominiumsId",
-                        column: x => x.ManagedCondominiumsId,
-                        principalTable: "Condominiums",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_CondominiumUser_Users_ManagersId",
-                        column: x => x.ManagersId,
-                        principalTable: "Users",
+                        name: "FK_Users_Roles_RoleId",
+                        column: x => x.RoleId,
+                        principalTable: "Roles",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -115,6 +112,30 @@ namespace cem.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "UserCondominiums",
+                columns: table => new
+                {
+                    ManagedCondominiumsId = table.Column<int>(type: "int", nullable: false),
+                    ManagersId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserCondominiums", x => new { x.ManagedCondominiumsId, x.ManagersId });
+                    table.ForeignKey(
+                        name: "FK_UserCondominiums_Condominiums_ManagedCondominiumsId",
+                        column: x => x.ManagedCondominiumsId,
+                        principalTable: "Condominiums",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_UserCondominiums_Users_ManagersId",
+                        column: x => x.ManagersId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Notifications",
                 columns: table => new
                 {
@@ -145,10 +166,42 @@ namespace cem.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.CreateIndex(
-                name: "IX_CondominiumUser_ManagersId",
-                table: "CondominiumUser",
-                column: "ManagersId");
+            migrationBuilder.InsertData(
+                table: "Condominiums",
+                columns: new[] { "Id", "Address", "City", "CreationDate", "Name", "PostalCode", "Province" },
+                values: new object[,]
+                {
+                    { 1, "Via Roma 1", "Milano", new DateTime(2025, 10, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Condominio A", "20100", "MI" },
+                    { 2, "Via Dante 2", "Torino", new DateTime(2025, 10, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Condominio B", "10100", "TO" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "Roles",
+                columns: new[] { "Id", "Name" },
+                values: new object[,]
+                {
+                    { 1, "Master" },
+                    { 2, "Manager" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "Users",
+                columns: new[] { "Id", "CreatedAt", "Email", "FirstName", "LastName", "PasswordHash", "RoleId", "Username" },
+                values: new object[,]
+                {
+                    { 1, new DateTime(2025, 10, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "master@cem.com", "Master", "Supremo", "hashed_password", 1, "master" },
+                    { 2, new DateTime(2025, 10, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "manager@cem.com", "Manager", "Basic", "hashed_password", 2, "manager" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "Expenses",
+                columns: new[] { "Id", "Amount", "ApprovedAt", "ApprovedById", "AttachmentPath", "CondominiumId", "CreatedAt", "CreatedById", "Date", "Description", "RejectionReason", "Status", "Type" },
+                values: new object[] { 1, 100.50m, null, null, null, 1, new DateTime(2025, 10, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), 2, new DateTime(2025, 10, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Pulizia scale", null, 0, "Manutenzione" });
+
+            migrationBuilder.InsertData(
+                table: "Notifications",
+                columns: new[] { "Id", "CreatedAt", "ExpenseId", "Message", "ReadAt", "Title", "Type", "UserId" },
+                values: new object[] { 1, new DateTime(2025, 10, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), 1, "Una nuova spesa è stata creata.", null, "Nuova spesa", 0, 2 });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Expenses_ApprovedById",
@@ -174,16 +227,26 @@ namespace cem.Migrations
                 name: "IX_Notifications_UserId",
                 table: "Notifications",
                 column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserCondominiums_ManagersId",
+                table: "UserCondominiums",
+                column: "ManagersId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_RoleId",
+                table: "Users",
+                column: "RoleId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "CondominiumUser");
+                name: "Notifications");
 
             migrationBuilder.DropTable(
-                name: "Notifications");
+                name: "UserCondominiums");
 
             migrationBuilder.DropTable(
                 name: "Expenses");
@@ -193,6 +256,9 @@ namespace cem.Migrations
 
             migrationBuilder.DropTable(
                 name: "Users");
+
+            migrationBuilder.DropTable(
+                name: "Roles");
         }
     }
 }
