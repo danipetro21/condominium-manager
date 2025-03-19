@@ -8,13 +8,17 @@ public class CondominiumService
 {
     private readonly ApplicationDbContext _context;
     private readonly ILogger<CondominiumService> _logger;
+    private readonly string _uploadPath;
+    private readonly EmailService _emailService;
 
     public CondominiumService(
         ApplicationDbContext context,
-        ILogger<CondominiumService> logger)
+        ILogger<CondominiumService> logger,
+        IWebHostEnvironment environment)
     {
         _context = context;
         _logger = logger;
+        _uploadPath = Path.Combine(environment.WebRootPath ?? "wwwroot", "uploads");
     }
 
     public async Task<List<Condominium>> GetUserCondominiumsAsync(string userId, bool isAdmin = false)
@@ -148,6 +152,19 @@ public class CondominiumService
             expense.ApprovedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+
+            var templatePath = Path.Combine("wwwroot", "email", "expense-approved.html");
+            var template = await File.ReadAllTextAsync(templatePath);
+            var emailBody = template
+                .Replace("{{FirstName}}", expense.CreatedBy.FirstName)
+                .Replace("{{LastName}}", expense.CreatedBy.LastName)
+                .Replace("{{Amount}}", expense.Amount.ToString("N2"))
+                .Replace("{{Description}}", expense.Description)
+                .Replace("{{CondominiumName}}", expense.Condominium.Name)
+                .Replace("{{Date}}", expense.Date.ToString("dd/MM/yyyy"))
+                .Replace("{{ApplicationUrl}}", Environment.GetEnvironmentVariable("WWW_DOMAIN") + "/expenses/" + expense.Id);
+            await _emailService.SendEmailAsync(expense.CreatedBy.Email!, "Spesa Approvata - Condominium Manager", emailBody );
+
             return expense;
         }
         catch (Exception ex)

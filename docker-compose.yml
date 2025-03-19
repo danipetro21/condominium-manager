@@ -14,6 +14,14 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - DOTNET_USE_POLLING_FILE_WATCHER=true
       - ASPNETCORE_URLS=https://+:5001;http://+:5000
+      - TEST_EMAIL=MS_SrrVEk@trial-86org8e2e81gew13.mlsender.net
+      - SMTP_SERVER=smtp.mailersend.net
+      - SMTP_PORT=587
+      - SMTP_USERNAME=MS_SrrVEk@trial-86org8e2e81gew13.mlsender.net
+      - SMTP_PASSWORD=mssp.zp909L6.pr9084z12vvgw63d.Wi0hxmk
+      - SMTP_FROM_EMAIL=test@cem.com
+      - SMTP_FROM_NAME=Condominium Manager
+      - WWW_DOMAIN=http://localhost:5001
     depends_on:
       - db
 
