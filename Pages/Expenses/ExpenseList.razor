@@ -73,6 +73,9 @@
                         @context.CreatedBy.Email
                     </MudTd>
                     <MudTd DataLabel="Azioni">
+                        <MudIconButton Icon="@Icons.Material.Filled.Visibility" 
+                                     Color="Color.Info" 
+                                     OnClick="@(() => Navigation.NavigateTo($"/expenses/{context.Id}"))" />
                         @if (!_isAdmin)
                         {
                             <MudIconButton Icon="@Icons.Material.Filled.Edit" 

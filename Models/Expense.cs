@@ -28,8 +28,6 @@ namespace cem.Models
         [Required(ErrorMessage = "La categoria è obbligatoria")]
         public ExpenseCategory Category { get; set; }
 
-        public string? ReceiptPath { get; set; }
-
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? ApprovedAt { get; set; }
         public ExpenseStatus Status { get; set; } = ExpenseStatus.Pending;
@@ -41,6 +39,9 @@ namespace cem.Models
         public ApplicationUser? ApprovedBy { get; set; }
         public int CondominiumId { get; set; }
         public Condominium Condominium { get; set; } = null!;
+        
+        // Relazione con i file
+        public virtual ICollection<AppFile> Files { get; set; } = new List<AppFile>();
     }
 
     public enum ExpenseCategory

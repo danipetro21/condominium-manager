@@ -73,11 +73,15 @@
                               Variant="Variant.Outlined"
                               StartIcon="@Icons.Material.Filled.AttachFile"
                               for="receipt-upload">
-                        @(_expense.ReceiptPath != null ? "Cambia ricevuta" : "Carica ricevuta")
+                        @(_selectedFile != null || _expense.Files.Any() ? "Cambia ricevuta" : "Carica ricevuta")
                     </MudButton>
-                    @if (_expense.ReceiptPath != null)
+                    @if (_selectedFile != null)
                     {
-                        <MudText Class="ml-2">@_expense.ReceiptPath</MudText>
+                        <MudText Class="ml-2">@_selectedFile.Name</MudText>
+                    }
+                    else if (_expense.Files.Any())
+                    {
+                        <MudText Class="ml-2">@_expense.Files.First().FileName</MudText>
                     }
                 </MudItem>
             </MudGrid>
@@ -224,13 +228,13 @@
             if (Id == null)
             {
                 Logger.LogInformation("Creazione nuova spesa");
-                await ExpenseService.CreateExpenseAsync(_expense);
+                await ExpenseService.CreateExpenseAsync(_expense, _selectedFile);
                 Snackbar.Add("Spesa creata con successo", Severity.Success);
             }
             else
             {
                 Logger.LogInformation($"Aggiornamento spesa esistente: {Id}");
-                await ExpenseService.UpdateExpenseAsync(_expense);
+                await ExpenseService.UpdateExpenseAsync(_expense, _selectedFile);
                 Snackbar.Add("Spesa aggiornata con successo", Severity.Success);
             }
 

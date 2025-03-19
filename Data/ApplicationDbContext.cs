@@ -15,6 +15,7 @@ namespace cem.Data
         public DbSet<Condominium> Condominiums { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<UserCondominium> UserCondominiums { get; set; }
+        public DbSet<AppFile> Files { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -54,6 +55,21 @@ namespace cem.Data
                 .HasOne(n => n.Expense)
                 .WithMany()
                 .HasForeignKey(n => n.ExpenseId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<AppFile>()
+                .HasOne(f => f.UploadedBy)
+                .WithMany(u => u.Files)
+                .HasForeignKey(f => f.UploadedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<AppFile>()
+                .HasIndex(f => new { f.EntityType, f.EntityId });
+
+            modelBuilder.Entity<Expense>()
+                .HasMany(e => e.Files)
+                .WithOne()
+                .HasForeignKey(f => f.EntityId)
                 .OnDelete(DeleteBehavior.Cascade);
         }
     }
