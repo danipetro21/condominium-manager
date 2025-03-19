@@ -28,3 +28,6 @@
 - Database: Sql server express
 - .Net 8
 - Git Flow
+
+
+export PATH="$PATH:$HOME/.dotnet/tools/"

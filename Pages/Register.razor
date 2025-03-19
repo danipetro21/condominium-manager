@@ -1,0 +1,107 @@
+@page "/register"
+@using Microsoft.AspNetCore.Identity
+@using cem.Models
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+    <MudPaper Class="pa-8">
+        <MudText Typo="Typo.h4" Class="mb-8">Registration</MudText>
+
+        <EditForm Model="@registerModel" OnValidSubmit="HandleRegister">
+            <DataAnnotationsValidator />
+
+            <MudTextField @bind-Value="registerModel.FirstName"
+                         Label="First Name"
+                         Required="true"
+                         RequiredError="First name is required"
+                         Class="mb-4" />
+
+            <MudTextField @bind-Value="registerModel.LastName"
+                         Label="Last Name"
+                         Required="true"
+                         RequiredError="Last name is required"
+                         Class="mb-4" />
+
+            <MudTextField @bind-Value="registerModel.Email"
+                         Label="Email"
+                         Required="true"
+                         RequiredError="Email is required"
+                         InputType="InputType.Email"
+                         Class="mb-4" />
+
+            <MudTextField @bind-Value="registerModel.Password"
+                         Label="Password"
+                         Required="true"
+                         RequiredError="Password is required"
+                         InputType="InputType.Password"
+                         Class="mb-4" />
+
+            <MudTextField @bind-Value="registerModel.ConfirmPassword"
+                         Label="Confirm Password"
+                         Required="true"
+                         RequiredError="Password confirmation is required"
+                         InputType="InputType.Password"
+                         Class="mb-4" />
+
+            <MudButton ButtonType="ButtonType.Submit"
+                      Variant="Variant.Filled"
+                      Color="Color.Primary"
+                      Size="Size.Large"
+                      FullWidth="true">
+                Register
+            </MudButton>
+        </EditForm>
+
+        <MudText Class="mt-4">
+            Already have an account? <MudLink Href="/login">Login</MudLink>
+        </MudText>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private RegisterModel registerModel = new();
+
+    private async Task HandleRegister()
+    {
+        if (registerModel.Password != registerModel.ConfirmPassword)
+        {
+            Snackbar.Add("Passwords do not match", Severity.Error);
+            return;
+        }
+
+        var user = new ApplicationUser
+        {
+            UserName = registerModel.Email,
+            Email = registerModel.Email,
+            FirstName = registerModel.FirstName,
+            LastName = registerModel.LastName
+        };
+
+        var result = await UserManager.CreateAsync(user, registerModel.Password);
+
+        if (result.Succeeded)
+        {
+            await SignInManager.SignInAsync(user, isPersistent: false);
+            NavigationManager.NavigateTo("/");
+        }
+        else
+        {
+            foreach (var error in result.Errors)
+            {
+                Snackbar.Add(error.Description, Severity.Error);
+            }
+        }
+    }
+
+    private class RegisterModel
+    {
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+} 

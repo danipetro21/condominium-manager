@@ -28,8 +28,8 @@ namespace cem.Models
         public DateTime? ReadAt { get; set; }
 
         // Relazione con l'utente destinatario
-        public int UserId { get; set; }
-        public required User User { get; set; }
+        public string UserId { get; set; } = string.Empty;
+        public required ApplicationUser User { get; set; }
 
         // Relazione con la spesa (se la notifica è relativa a una spesa)
         public int? ExpenseId { get; set; }
