@@ -1,0 +1,163 @@
+@page "/admin/messages"
+@using Microsoft.AspNetCore.Authorization
+@using cem.Models
+@using cem.Services
+@attribute [Authorize(Roles = "Admin")]
+@inject NotificationService NotificationService
+@inject ISnackbar Snackbar
+@inject ILogger<Messages> Logger
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudPaper Class="pa-4">
+        <MudText Typo="Typo.h4" Class="mb-4">Gestione Messaggi</MudText>
+
+        <MudTable Items="@_notifications" 
+                 Dense="true" 
+                 Hover="true" 
+                 Loading="@_loading" 
+                 LoadingProgressColor="Color.Info"
+                 Elevation="0"
+                 Class="mt-4">
+            <HeaderContent>
+                <MudTh>Titolo</MudTh>
+                <MudTh>Messaggio</MudTh>
+                <MudTh>Tipo</MudTh>
+                <MudTh>Destinatario</MudTh>
+                <MudTh>Data</MudTh>
+                <MudTh>Stato</MudTh>
+                <MudTh Style="text-align: right">Azioni</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Titolo">@context.Title</MudTd>
+                <MudTd DataLabel="Messaggio">@context.Message</MudTd>
+                <MudTd DataLabel="Tipo">
+                    <MudChip T="NotificationType" Color="@GetTypeColor(context.Type)" Size="Size.Small">
+                        @context.Type.ToString()
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Destinatario">@($"{context.User?.FirstName} {context.User?.LastName}")</MudTd>
+                <MudTd DataLabel="Data">@context.CreatedAt.ToLocalTime().ToString("g")</MudTd>
+                <MudTd DataLabel="Stato">
+                    @if (context.ReadAt.HasValue)
+                    {
+                        <MudChip T="bool" Color="Color.Success" Size="Size.Small">
+                            Letto
+                        </MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="bool" Color="Color.Warning" Size="Size.Small">
+                            Non letto
+                        </MudChip>
+                    }
+                </MudTd>
+                <MudTd Style="text-align: right">
+                    <MudTooltip Text="Elimina">
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                     Color="Color.Error" 
+                                     Size="Size.Small"
+                                     OnClick="@(() => OpenDeleteDialog(context))" />
+                    </MudTooltip>
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText>Nessun messaggio trovato.</MudText>
+            </NoRecordsContent>
+            <LoadingContent>
+                <MudText>Caricamento messaggi...</MudText>
+            </LoadingContent>
+        </MudTable>
+    </MudPaper>
+</MudContainer>
+
+<MudDialog Open="@_showDeleteDialog" OnClosed="CloseDeleteDialog">
+    <TitleContent>
+        <MudText Typo="Typo.h6">Conferma Eliminazione</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudAlert Severity="Severity.Warning" Class="mb-4">
+            Questa azione non può essere annullata.
+        </MudAlert>
+        <MudText>
+            Sei sicuro di voler eliminare questo messaggio?
+        </MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseDeleteDialog" 
+                  Variant="Variant.Outlined" 
+                  Color="Color.Default">Annulla</MudButton>
+        <MudButton OnClick="DeleteNotification" 
+                  Variant="Variant.Filled" 
+                  Color="Color.Error">Elimina</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private List<Notification> _notifications = new();
+    private bool _loading = true;
+    private bool _showDeleteDialog;
+    private Notification? _deleteNotification;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        try
+        {
+            _notifications = await NotificationService.GetAllNotificationsAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Errore durante il caricamento dei messaggi");
+            Snackbar.Add("Errore durante il caricamento dei messaggi", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Color GetTypeColor(NotificationType type) => type switch
+    {
+        NotificationType.ExpenseApproved => Color.Success,
+        NotificationType.ExpenseRejected => Color.Error,
+        NotificationType.PaymentDue => Color.Warning,
+        NotificationType.SystemNotification => Color.Info,
+        _ => Color.Default
+    };
+
+    private void OpenDeleteDialog(Notification notification)
+    {
+        _deleteNotification = notification;
+        _showDeleteDialog = true;
+    }
+
+    private void CloseDeleteDialog()
+    {
+        _showDeleteDialog = false;
+        _deleteNotification = null;
+        StateHasChanged();
+    }
+
+    private async Task DeleteNotification()
+    {
+        if (_deleteNotification == null) return;
+
+        try
+        {
+            await NotificationService.DeleteNotificationAsync(_deleteNotification.Id);
+            await LoadData();
+            Snackbar.Add("Messaggio eliminato con successo", Severity.Success);
+            CloseDeleteDialog();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Errore durante l'eliminazione del messaggio");
+            Snackbar.Add("Errore durante l'eliminazione del messaggio", Severity.Error);
+        }
+    }
+} 

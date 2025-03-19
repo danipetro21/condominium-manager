@@ -16,6 +16,9 @@
                 <MudNavLink Href="/expenses" Icon="@Icons.Material.Filled.Receipt">
                     Spese
                 </MudNavLink>
+                <MudNavLink Href="/messages" Icon="@Icons.Material.Filled.Message">
+                    I Miei Messaggi
+                </MudNavLink>
             </MudNavGroup>
 
             <AuthorizeView Roles="Admin">
@@ -23,6 +26,9 @@
                     <MudNavGroup Title="Amministrazione" Icon="@Icons.Material.Filled.AdminPanelSettings">
                         <MudNavLink Href="/admin/users" Icon="@Icons.Material.Filled.People">
                             Gestione Utenti
+                        </MudNavLink>
+                        <MudNavLink Href="/admin/messages" Icon="@Icons.Material.Filled.Message">
+                            Messaggi
                         </MudNavLink>
                     </MudNavGroup>
                 </Authorized>
