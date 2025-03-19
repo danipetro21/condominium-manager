@@ -1,0 +1,155 @@
+@page "/messages"
+@using Microsoft.AspNetCore.Authorization
+@using cem.Models
+@using cem.Services
+@using System.Security.Claims
+@attribute [Authorize]
+@inject NotificationService NotificationService
+@inject ISnackbar Snackbar
+@inject ILogger<Messages> Logger
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>I Miei Messaggi - CEM App</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudPaper Class="pa-4">
+        <MudText Typo="Typo.h4" Class="mb-4">I Miei Messaggi</MudText>
+
+        <MudTable Items="@_notifications" 
+                 Dense="true" 
+                 Hover="true" 
+                 Loading="@_loading" 
+                 LoadingProgressColor="Color.Info"
+                 Elevation="0"
+                 MultiSelection="true"
+                 @bind-SelectedItems="_selectedNotifications"
+                 Class="mt-4">
+            <ToolBarContent>
+                <MudSpacer />
+                @if (_selectedNotifications.Any())
+                {
+                    <MudButton Color="Color.Primary"
+                              Variant="Variant.Filled"
+                              StartIcon="@Icons.Material.Filled.DoneAll"
+                              Size="Size.Small"
+                              OnClick="MarkSelectedAsRead"
+                              Class="mr-2">
+                        Segna come letti
+                    </MudButton>
+                }
+            </ToolBarContent>
+            <HeaderContent>
+                <MudTh>Titolo</MudTh>
+                <MudTh>Messaggio</MudTh>
+                <MudTh>Tipo</MudTh>
+                <MudTh>Data</MudTh>
+                <MudTh>Stato</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Titolo">@context.Title</MudTd>
+                <MudTd DataLabel="Messaggio">@context.Message</MudTd>
+                <MudTd DataLabel="Tipo">
+                    <MudChip T="NotificationType" Color="@GetTypeColor(context.Type)" Size="Size.Small">
+                        @context.Type.ToString()
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Data">@context.CreatedAt.ToLocalTime().ToString("g")</MudTd>
+                <MudTd DataLabel="Stato">
+                    @if (context.ReadAt.HasValue)
+                    {
+                        <MudChip T="bool" Color="Color.Success" Size="Size.Small">
+                            Letto
+                        </MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="bool" Color="Color.Warning" Size="Size.Small">
+                            Non letto
+                        </MudChip>
+                    }
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText>Nessun messaggio trovato.</MudText>
+            </NoRecordsContent>
+            <LoadingContent>
+                <MudText>Caricamento messaggi...</MudText>
+            </LoadingContent>
+            <PagerContent>
+                <MudTablePager />
+            </PagerContent>
+        </MudTable>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<Notification> _notifications = new();
+    private HashSet<Notification> _selectedNotifications = new();
+    private bool _loading = true;
+    private string? _userId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated != true)
+        {
+            return;
+        }
+
+        _userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (_userId != null)
+        {
+            await LoadData();
+        }
+    }
+
+    private async Task LoadData()
+    {
+        if (_userId == null) return;
+
+        _loading = true;
+        try
+        {
+            _notifications = await NotificationService.GetUserNotificationsAsync(_userId);
+            _selectedNotifications.Clear();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Errore durante il caricamento dei messaggi");
+            Snackbar.Add("Errore durante il caricamento dei messaggi", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Color GetTypeColor(NotificationType type) => type switch
+    {
+        NotificationType.ExpenseApproved => Color.Success,
+        NotificationType.ExpenseRejected => Color.Error,
+        NotificationType.PaymentDue => Color.Warning,
+        NotificationType.SystemNotification => Color.Info,
+        _ => Color.Default
+    };
+
+    private async Task MarkSelectedAsRead()
+    {
+        try
+        {
+            foreach (var notification in _selectedNotifications.Where(n => n.ReadAt == null))
+            {
+                await NotificationService.MarkAsReadAsync(notification.Id);
+            }
+            await LoadData();
+            Snackbar.Add("Messaggi segnati come letti", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Errore durante la marcatura dei messaggi come letti");
+            Snackbar.Add("Errore durante la marcatura dei messaggi come letti", Severity.Error);
+        }
+    }
+} 
