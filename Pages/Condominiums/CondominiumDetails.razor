@@ -1,0 +1,148 @@
+@page "/condominiums/{Id:int}"
+@using cem.Models
+@using cem.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.Extensions.Logging
+@using System.Security.Claims
+@inject CondominiumService CondominiumService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+@inject ILogger<CondominiumDetails> Logger
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Dettagli Condominio - CEM App</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudPaper Class="pa-4">
+        <MudGrid>
+            <MudItem xs="12" Class="d-flex justify-space-between align-center">
+                <MudText Typo="Typo.h4">Dettagli Condominio</MudText>
+                <MudButton Variant="Variant.Outlined" 
+                          Color="Color.Default" 
+                          OnClick="GoBack">
+                    Indietro
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+
+        @if (_summary == null)
+        {
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        }
+        else
+        {
+            <MudGrid Class="mt-4">
+                <MudItem xs="12" md="6">
+                    <MudCard>
+                        <MudCardHeader>
+                            <MudText Typo="Typo.h6">Informazioni Condominio</MudText>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudText><strong>Nome:</strong> @_summary.Condominium.Name</MudText>
+                            <MudText><strong>Indirizzo:</strong> @_summary.Condominium.Address</MudText>
+                            <MudText><strong>Città:</strong> @_summary.Condominium.City (@_summary.Condominium.Province)</MudText>
+                            <MudText><strong>CAP:</strong> @_summary.Condominium.PostalCode</MudText>
+                            <MudText><strong>Data di creazione:</strong> @_summary.Condominium.CreationDate.ToShortDateString()</MudText>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudCard>
+                        <MudCardHeader>
+                            <MudText Typo="Typo.h6">Riepilogo Spese</MudText>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudText><strong>Totale spese:</strong> @_summary.TotalExpenses.ToString("C")</MudText>
+                            @if (_summary.LastExpenseDate.HasValue)
+                            {
+                                <MudText><strong>Ultima spesa:</strong> @_summary.LastExpenseDate.Value.ToShortDateString()</MudText>
+                            }
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudCard Class="mt-4">
+                        <MudCardHeader>
+                            <MudText Typo="Typo.h6">Spese per Categoria</MudText>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudTable Items="@_summary.ExpensesByCategory" Dense="true" Hover="true" Bordered="true" Striped="true">
+                                <HeaderContent>
+                                    <MudTh>Categoria</MudTh>
+                                    <MudTh>Numero Spese</MudTh>
+                                    <MudTh>Totale</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd DataLabel="Categoria">@context.Category</MudTd>
+                                    <MudTd DataLabel="Numero Spese">@context.Count</MudTd>
+                                    <MudTd DataLabel="Totale">@context.Total.ToString("C")</MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            </MudGrid>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private CondominiumSummary? _summary;
+    private ClaimsPrincipal? _user;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            _user = authState.User;
+            
+            if (_user == null || _user.Identity == null || !_user.Identity.IsAuthenticated)
+            {
+                Navigation.NavigateTo("/login", true);
+                return;
+            }
+
+            await LoadCondominiumDetails();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Errore durante l'inizializzazione della pagina");
+            Snackbar.Add("Errore durante il caricamento dei dettagli del condominio", Severity.Error);
+            Navigation.NavigateTo("/condominiums");
+        }
+    }
+
+    private async Task LoadCondominiumDetails()
+    {
+        try
+        {
+            if (_user == null) return;
+
+            var userId = _user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                Logger.LogWarning("User ID not found in claims");
+                return;
+            }
+
+            _summary = await CondominiumService.GetCondominiumSummaryAsync(Id, userId);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Errore durante il caricamento dei dettagli del condominio");
+            Snackbar.Add("Errore durante il caricamento dei dettagli del condominio", Severity.Error);
+            Navigation.NavigateTo("/condominiums");
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/condominiums");
+    }
+} 

@@ -1,0 +1,116 @@
+@page "/condominiums"
+@using cem.Models
+@using cem.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.Extensions.Logging
+@using System.Security.Claims
+@inject CondominiumService CondominiumService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+@inject ILogger<CondominiumList> Logger
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Gestione Condomini - CEM App</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudPaper Class="pa-4">
+        <MudGrid>
+            <MudItem xs="12" Class="d-flex justify-space-between align-center">
+                <MudText Typo="Typo.h4">Gestione Condomini</MudText>
+            </MudItem>
+        </MudGrid>
+
+        @if (_condominiums == null)
+        {
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        }
+        else if (!_condominiums.Any())
+        {
+            <MudAlert Severity="Severity.Info" Class="mt-4">
+                Nessun condominio trovato.
+            </MudAlert>
+        }
+        else
+        {
+            <MudGrid Class="mt-4">
+                @foreach (var condominium in _condominiums)
+                {
+                    <MudItem xs="12" md="6" lg="4">
+                        <MudCard Class="ma-2">
+                            <MudCardHeader>
+                                <MudText Typo="Typo.h6">@condominium.Name</MudText>
+                            </MudCardHeader>
+                            <MudCardContent>
+                                <MudText>@condominium.Address</MudText>
+                                <MudText>@condominium.City (@condominium.Province)</MudText>
+                                <MudText>@condominium.PostalCode</MudText>
+                            </MudCardContent>
+                            <MudCardActions>
+                                <MudButton Variant="Variant.Filled" 
+                                          Color="Color.Primary" 
+                                          OnClick="@(() => ViewDetails(condominium.Id))">
+                                    Dettagli
+                                </MudButton>
+                            </MudCardActions>
+                        </MudCard>
+                    </MudItem>
+                }
+            </MudGrid>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<Condominium>? _condominiums;
+    private ClaimsPrincipal? _user;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            _user = authState.User;
+            
+            if (_user == null || _user.Identity == null || !_user.Identity.IsAuthenticated)
+            {
+                Navigation.NavigateTo("/login", true);
+                return;
+            }
+
+            await LoadCondominiums();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Errore durante l'inizializzazione della pagina");
+            Snackbar.Add("Errore durante il caricamento dei condomini", Severity.Error);
+        }
+    }
+
+    private async Task LoadCondominiums()
+    {
+        try
+        {
+            if (_user == null) return;
+
+            var userId = _user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                Logger.LogWarning("User ID not found in claims");
+                return;
+            }
+
+            _condominiums = await CondominiumService.GetUserCondominiumsAsync(userId);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Errore durante il caricamento dei condomini");
+            Snackbar.Add("Errore durante il caricamento dei condomini", Severity.Error);
+        }
+    }
+
+    private void ViewDetails(int condominiumId)
+    {
+        Navigation.NavigateTo($"/condominiums/{condominiumId}");
+    }
+} 
