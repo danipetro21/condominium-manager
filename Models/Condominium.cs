@@ -34,6 +34,6 @@ namespace cem.Models
         public virtual ICollection<Expense> Expenses { get; set; } = new List<Expense>();
 
         // Relazione con i gestori del condominio
-        public virtual ICollection<User> Managers { get; set; } = new List<User>();
+        public virtual ICollection<ApplicationUser> Managers { get; set; } = new List<ApplicationUser>();
     }
 } 

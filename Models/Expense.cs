@@ -43,10 +43,10 @@ namespace cem.Models
         public int CondominiumId { get; set; }
         public required Condominium Condominium { get; set; }
 
-        public int CreatedById { get; set; }
-        public required User CreatedBy { get; set; }
+        public string CreatedById { get; set; } = string.Empty;
+        public required ApplicationUser CreatedBy { get; set; }
 
-        public int? ApprovedById { get; set; }
-        public virtual User? ApprovedBy { get; set; }
+        public string? ApprovedById { get; set; }
+        public virtual ApplicationUser? ApprovedBy { get; set; }
     }
 } 

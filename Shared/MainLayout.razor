@@ -13,6 +13,10 @@
         <MudSpacer />
         <AuthorizeView>
             <Authorized>
+                <MudIconButton Icon="@Icons.Material.Filled.Logout" 
+                             Color="Color.Inherit" 
+                             OnClick="Logout" 
+                             Title="Logout" />
                 <MudMenu Icon="@Icons.Material.Filled.Person" Color="Color.Inherit" direction="Direction.Bottom" offsetY="true">
                     <MudText Typo="Typo.body2" Class="px-4 py-2">
                         Ciao, @context.User.Identity?.Name!
@@ -39,7 +43,6 @@
 </MudLayout>
 
 @code {
-    [Inject] private AuthService AuthService { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
 
     private bool _drawerOpen = true;
@@ -49,9 +52,8 @@
         _drawerOpen = !_drawerOpen;
     }
 
-    private async Task Logout()
+    private void Logout()
     {
-        await AuthService.LogoutAsync();
-        Navigation.NavigateTo("/login");
+        Navigation.NavigateTo("/Account/Logout", true);
     }
 }
