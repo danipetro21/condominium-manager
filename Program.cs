@@ -65,6 +65,7 @@ builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStat
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ExpenseService>();
 builder.Services.AddScoped<CondominiumService>();
+builder.Services.AddScoped<IReportService, ReportService>();
 
 var app = builder.Build();
 

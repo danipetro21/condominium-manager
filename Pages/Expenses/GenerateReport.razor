@@ -1,0 +1,109 @@
+@page "/expenses/report/{CondominiumId:int}"
+@using cem.Models
+@using cem.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.Extensions.Logging
+@using System.Security.Claims
+@inject IReportService ReportService
+@inject ISnackbar Snackbar
+@inject ILogger<GenerateReport> Logger
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Genera Report Spese - CEM App</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    <MudPaper Class="pa-4">
+        <MudText Typo="Typo.h4" Class="mb-4">Genera Report Spese</MudText>
+
+        <MudGrid>
+            <MudItem xs="12">
+                <MudText Typo="Typo.body1" Class="mb-4">
+                    Seleziona il periodo per il report delle spese
+                </MudText>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudDatePicker Label="Data Inizio"
+                              @bind-Date="_startDate"
+                              DateFormat="dd/MM/yyyy"
+                              PickerVariant="PickerVariant.Dialog" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudDatePicker Label="Data Fine"
+                              @bind-Date="_endDate"
+                              DateFormat="dd/MM/yyyy"
+                              PickerVariant="PickerVariant.Dialog" />
+            </MudItem>
+            <MudItem xs="12" Class="d-flex justify-end mt-4">
+                <MudButton Variant="Variant.Outlined" 
+                          Color="Color.Default" 
+                          OnClick="Cancel" 
+                          Class="mr-2">
+                    Annulla
+                </MudButton>
+                <MudButton Variant="Variant.Filled" 
+                          Color="Color.Primary" 
+                          OnClick="GenerateReportAsync"
+                          Disabled="@(!_isValid)">
+                    Genera Report
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    [Parameter] public int CondominiumId { get; set; }
+
+    private DateTime? _startDate;
+    private DateTime? _endDate;
+    private bool _isValid;
+
+    protected override void OnInitialized()
+    {
+        _startDate = DateTime.Now.AddMonths(-1);
+        _endDate = DateTime.Now;
+        _isValid = true;
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/expenses");
+    }
+
+    private async Task GenerateReportAsync()
+    {
+        try
+        {
+            var reportBytes = await ReportService.GenerateExpensesReportAsync(
+                CondominiumId,
+                _startDate,
+                _endDate);
+
+            if (reportBytes == null || reportBytes.Length == 0)
+            {
+                Snackbar.Add("Errore: il report è vuoto", Severity.Error);
+                return;
+            }
+
+            var fileName = $"report_spese_{DateTime.Now:yyyyMMdd}.pdf";
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("saveAsFile", fileName, Convert.ToBase64String(reportBytes));
+                Snackbar.Add("Report generato con successo", Severity.Success);
+                Navigation.NavigateTo("/expenses");
+            }
+            catch (Exception jsEx)
+            {
+                Logger.LogError(jsEx, "Errore durante il download del file");
+                Snackbar.Add("Errore durante il download del file", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Errore durante la generazione del report");
+            Snackbar.Add("Errore durante la generazione del report", Severity.Error);
+        }
+    }
+} 

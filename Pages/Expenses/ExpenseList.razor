@@ -17,12 +17,23 @@
         <MudGrid>
             <MudItem xs="12" Class="d-flex justify-space-between align-center">
                 <MudText Typo="Typo.h4">Gestione Spese</MudText>
-                <MudButton Variant="Variant.Filled" 
-                          Color="Color.Primary" 
-                          StartIcon="@Icons.Material.Filled.Add"
-                          OnClick="OpenCreateForm">
-                    Nuova Spesa
-                </MudButton>
+                <MudStack Row="true" Spacing="2">
+                    @if (_isAdmin)
+                    {
+                        <MudButton Variant="Variant.Outlined" 
+                                  Color="Color.Secondary" 
+                                  StartIcon="@Icons.Material.Filled.PictureAsPdf"
+                                  OnClick="@(() => Navigation.NavigateTo($"/expenses/report/{_condominiumId}"))">
+                            Genera Report
+                        </MudButton>
+                    }
+                    <MudButton Variant="Variant.Filled" 
+                              Color="Color.Primary" 
+                              StartIcon="@Icons.Material.Filled.Add"
+                              OnClick="OpenCreateForm">
+                        Nuova Spesa
+                    </MudButton>
+                </MudStack>
             </MudItem>
         </MudGrid>
 
@@ -82,6 +93,7 @@
     private List<Expense>? _expenses;
     private ClaimsPrincipal? _user;
     private bool _isAdmin;
+    private int _condominiumId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -132,6 +144,10 @@
             Logger.LogInformation($"Loading expenses for user {userId} (Admin: {_isAdmin})");
 
             _expenses = await ExpenseService.GetExpensesAsync(userId, _isAdmin);
+            if (_expenses.Any())
+            {
+                _condominiumId = _expenses.First().CondominiumId;
+            }
             Logger.LogInformation($"Loaded {_expenses?.Count ?? 0} expenses");
             StateHasChanged();
         }
