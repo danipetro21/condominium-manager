@@ -53,10 +53,15 @@
                             <MudText Typo="Typo.h6">Riepilogo Spese</MudText>
                         </MudCardHeader>
                         <MudCardContent>
-                            <MudText><strong>Totale spese:</strong> @_summary.TotalExpenses.ToString("C")</MudText>
+                            <MudText><strong>Totale spese approvate:</strong> @_summary.TotalExpenses.ToString("C")</MudText>
                             @if (_summary.LastExpenseDate.HasValue)
                             {
                                 <MudText><strong>Ultima spesa:</strong> @_summary.LastExpenseDate.Value.ToShortDateString()</MudText>
+                            }
+                            @if (_isAdmin)
+                            {
+                                <MudText Color="Color.Warning"><strong>Spese in attesa:</strong> @_summary.PendingExpenses</MudText>
+                                <MudText Color="Color.Error"><strong>Spese rifiutate:</strong> @_summary.RejectedExpenses</MudText>
                             }
                         </MudCardContent>
                     </MudCard>
@@ -83,6 +88,44 @@
                         </MudCardContent>
                     </MudCard>
                 </MudItem>
+
+                @if (_isAdmin && _pendingExpenses.Any())
+                {
+                    <MudItem xs="12">
+                        <MudCard Class="mt-4">
+                            <MudCardHeader>
+                                <MudText Typo="Typo.h6">Spese in Attesa di Approvazione</MudText>
+                            </MudCardHeader>
+                            <MudCardContent>
+                                <MudTable Items="@_pendingExpenses" Dense="true" Hover="true" Bordered="true" Striped="true">
+                                    <HeaderContent>
+                                        <MudTh>Data</MudTh>
+                                        <MudTh>Descrizione</MudTh>
+                                        <MudTh>Categoria</MudTh>
+                                        <MudTh>Importo</MudTh>
+                                        <MudTh>Creato da</MudTh>
+                                        <MudTh>Azioni</MudTh>
+                                    </HeaderContent>
+                                    <RowTemplate>
+                                        <MudTd DataLabel="Data">@context.Date.ToShortDateString()</MudTd>
+                                        <MudTd DataLabel="Descrizione">@context.Description</MudTd>
+                                        <MudTd DataLabel="Categoria">@context.Category</MudTd>
+                                        <MudTd DataLabel="Importo">@context.Amount.ToString("C")</MudTd>
+                                        <MudTd DataLabel="Creato da">@context.CreatedBy.UserName</MudTd>
+                                        <MudTd DataLabel="Azioni">
+                                            <MudIconButton Icon="@Icons.Material.Filled.Check" 
+                                                         Color="Color.Success" 
+                                                         OnClick="@(() => ApproveExpense(context))" />
+                                            <MudIconButton Icon="@Icons.Material.Filled.Close" 
+                                                         Color="Color.Error" 
+                                                         OnClick="@(() => RejectExpense(context))" />
+                                        </MudTd>
+                                    </RowTemplate>
+                                </MudTable>
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+                }
             </MudGrid>
         }
     </MudPaper>
@@ -93,6 +136,8 @@
 
     private CondominiumSummary? _summary;
     private ClaimsPrincipal? _user;
+    private bool _isAdmin;
+    private List<Expense> _pendingExpenses = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -107,7 +152,12 @@
                 return;
             }
 
+            _isAdmin = _user.IsInRole("Admin");
             await LoadCondominiumDetails();
+            if (_isAdmin)
+            {
+                await LoadPendingExpenses();
+            }
         }
         catch (Exception ex)
         {
@@ -130,7 +180,7 @@
                 return;
             }
 
-            _summary = await CondominiumService.GetCondominiumSummaryAsync(Id, userId);
+            _summary = await CondominiumService.GetCondominiumSummaryAsync(Id, userId, _isAdmin);
             StateHasChanged();
         }
         catch (Exception ex)
@@ -138,6 +188,79 @@
             Logger.LogError(ex, "Errore durante il caricamento dei dettagli del condominio");
             Snackbar.Add("Errore durante il caricamento dei dettagli del condominio", Severity.Error);
             Navigation.NavigateTo("/condominiums");
+        }
+    }
+
+    private async Task LoadPendingExpenses()
+    {
+        try
+        {
+            if (_user == null) return;
+
+            var userId = _user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                Logger.LogWarning("User ID not found in claims");
+                return;
+            }
+
+            _pendingExpenses = await CondominiumService.GetPendingExpensesAsync(Id, userId, _isAdmin);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Errore durante il caricamento delle spese in attesa");
+            Snackbar.Add("Errore durante il caricamento delle spese in attesa", Severity.Error);
+        }
+    }
+
+    private async Task ApproveExpense(Expense expense)
+    {
+        try
+        {
+            if (_user == null) return;
+
+            var userId = _user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                Logger.LogWarning("User ID not found in claims");
+                return;
+            }
+
+            await CondominiumService.ApproveExpenseAsync(expense.Id, userId);
+            await LoadCondominiumDetails();
+            await LoadPendingExpenses();
+            Snackbar.Add("Spesa approvata con successo", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Errore durante l'approvazione della spesa");
+            Snackbar.Add("Errore durante l'approvazione della spesa", Severity.Error);
+        }
+    }
+
+    private async Task RejectExpense(Expense expense)
+    {
+        try
+        {
+            if (_user == null) return;
+
+            var userId = _user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                Logger.LogWarning("User ID not found in claims");
+                return;
+            }
+
+            await CondominiumService.RejectExpenseAsync(expense.Id, userId);
+            await LoadCondominiumDetails();
+            await LoadPendingExpenses();
+            Snackbar.Add("Spesa rifiutata con successo", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Errore durante il rifiuto della spesa");
+            Snackbar.Add("Errore durante il rifiuto della spesa", Severity.Error);
         }
     }
 

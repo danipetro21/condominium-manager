@@ -63,6 +63,7 @@
 @code {
     private List<Condominium>? _condominiums;
     private ClaimsPrincipal? _user;
+    private bool _isAdmin;
 
     protected override async Task OnInitializedAsync()
     {
@@ -77,6 +78,7 @@
                 return;
             }
 
+            _isAdmin = _user.IsInRole("Admin");
             await LoadCondominiums();
         }
         catch (Exception ex)
@@ -99,7 +101,7 @@
                 return;
             }
 
-            _condominiums = await CondominiumService.GetUserCondominiumsAsync(userId);
+            _condominiums = await CondominiumService.GetUserCondominiumsAsync(userId, _isAdmin);
             StateHasChanged();
         }
         catch (Exception ex)

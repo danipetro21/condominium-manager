@@ -45,6 +45,7 @@
                     <MudTh>Categoria</MudTh>
                     <MudTh>Importo</MudTh>
                     <MudTh>Stato</MudTh>
+                    <MudTh>Creato da</MudTh>
                     <MudTh>Azioni</MudTh>
                 </HeaderContent>
                 <RowTemplate>
@@ -57,13 +58,19 @@
                             @context.Status
                         </MudChip>
                     </MudTd>
+                    <MudTd DataLabel="Creato da">
+                        @context.CreatedBy.Email
+                    </MudTd>
                     <MudTd DataLabel="Azioni">
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit" 
-                                     Color="Color.Primary" 
-                                     OnClick="@(() => OpenEditForm(context))" />
-                        <MudIconButton Icon="@Icons.Material.Filled.Delete" 
-                                     Color="Color.Error" 
-                                     OnClick="@(() => DeleteExpense(context))" />
+                        @if (!_isAdmin)
+                        {
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                         Color="Color.Primary" 
+                                         OnClick="@(() => OpenEditForm(context))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                         Color="Color.Error" 
+                                         OnClick="@(() => DeleteExpense(context))" />
+                        }
                     </MudTd>
                 </RowTemplate>
             </MudTable>
@@ -74,6 +81,7 @@
 @code {
     private List<Expense>? _expenses;
     private ClaimsPrincipal? _user;
+    private bool _isAdmin;
 
     protected override async Task OnInitializedAsync()
     {
@@ -91,6 +99,8 @@
                 Navigation.NavigateTo("/login", true);
                 return;
             }
+
+            _isAdmin = _user.IsInRole("Admin");
 
             await LoadExpenses();
         }
@@ -119,11 +129,9 @@
                 return;
             }
 
-            var isAdmin = _user.IsInRole("Admin");
+            Logger.LogInformation($"Loading expenses for user {userId} (Admin: {_isAdmin})");
 
-            Logger.LogInformation($"Loading expenses for user {userId} (Admin: {isAdmin})");
-
-            _expenses = await ExpenseService.GetExpensesAsync(userId, isAdmin);
+            _expenses = await ExpenseService.GetExpensesAsync(userId, _isAdmin);
             Logger.LogInformation($"Loaded {_expenses?.Count ?? 0} expenses");
             StateHasChanged();
         }
@@ -157,9 +165,7 @@
                 return;
             }
 
-            var isAdmin = _user.IsInRole("Admin");
-
-            await ExpenseService.DeleteExpenseAsync(expense.Id, userId, isAdmin);
+            await ExpenseService.DeleteExpenseAsync(expense.Id, userId, _isAdmin);
             await LoadExpenses();
             Snackbar.Add("Spesa eliminata con successo", Severity.Success);
         }
