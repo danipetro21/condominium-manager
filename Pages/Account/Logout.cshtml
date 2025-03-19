@@ -1,0 +1,12 @@
+@page
+@using Microsoft.AspNetCore.Identity
+@using cem.Models
+@inject SignInManager<ApplicationUser> SignInManager
+
+@functions {
+    public async Task<IActionResult> OnGetAsync()
+    {
+        await SignInManager.SignOutAsync();
+        return Redirect("/");
+    }
+} 

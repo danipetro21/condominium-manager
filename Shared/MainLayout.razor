@@ -1,47 +1,77 @@
 ﻿@inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Authorization
 @using cem.Services
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Components
+@using System.Security.Claims
+@using cem.Models
+
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+<MudPopoverProvider />
+
+<HeadContent>
+    <script src="js/app.js"></script>
+</HeadContent>
 
 <MudLayout>
-    <MudAppBar Color="Color.Primary" Elevation="4">
-        <MudText Typo="Typo.h6" Class="ml-2">CEM App</MudText>
+    <MudAppBar Elevation="1">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+        <MudText Typo="Typo.h6" Class="ml-4">CEM App</MudText>
         <MudSpacer />
         <AuthorizeView>
             <Authorized>
-                <MudText Typo="Typo.body1" Class="mr-2">Ciao, @context.User.Identity.Name!</MudText>
-                <MudButton Color="Color.Error" Variant="Variant.Text" OnClick="Logout">
-                    Logout
-                </MudButton>
+                @{
+                    var email = context.User.FindFirst(ClaimTypes.Email)?.Value;
+                    var role = context.User.FindFirst(ClaimTypes.Role)?.Value ?? "User";
+                }
+                <MudText Typo="Typo.body1" Class="mr-4">
+                    Benvenuto, @email
+                    <MudChip T="string" Color="Color.Primary" Size="Size.Small" Class="ml-2">
+                        @role
+                    </MudChip>
+                </MudText>
+                <MudIconButton Icon="@Icons.Material.Filled.Logout" 
+                             Color="Color.Inherit" 
+                             OnClick="Logout" />
+                <MudMenu Icon="@Icons.Material.Filled.Person" Color="Color.Inherit" direction="Direction.Bottom" offsetY="true">
+                    <MudText Typo="Typo.body2" Class="px-4 py-2">
+                        Ciao, @email
+                    </MudText>
+                    <MudDivider />
+                    <MudMenuItem OnClick="Logout" Icon="@Icons.Material.Filled.Logout">Logout</MudMenuItem>
+                </MudMenu>
             </Authorized>
             <NotAuthorized>
-                <MudButton Color="Color.Primary" Variant="Variant.Text" Href="/login">
-                    Login
-                </MudButton>
+                <MudButton Href="/login" Variant="Variant.Text" Color="Color.Inherit">Login</MudButton>
             </NotAuthorized>
         </AuthorizeView>
     </MudAppBar>
 
-    <MudDrawer Open="true" ClipMode="DrawerClipMode.Always" Elevation="4">
+    <MudDrawer @bind-Open="@_drawerOpen" Elevation="2" ClipMode="DrawerClipMode.Always">
         <NavMenu />
     </MudDrawer>
 
     <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pt-4">
+        <MudContainer MaxWidth="MaxWidth.Large" Class="pt-6">
             @Body
         </MudContainer>
     </MudMainContent>
 </MudLayout>
 
 @code {
-    [Inject]
-    private AuthService AuthService { get; set; }
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
 
-    [Inject]
-    private NavigationManager Navigation { get; set; }
+    private bool _drawerOpen = true;
 
-    private async Task Logout()
+    private void DrawerToggle()
     {
-        await AuthService.LogoutAsync();
-        Navigation.NavigateTo("/login");
+        _drawerOpen = !_drawerOpen;
+    }
+
+    private void Logout()
+    {
+        Navigation.NavigateTo("/Account/Logout", true);
     }
 }

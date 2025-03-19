@@ -1,0 +1,43 @@
+@page
+@using Microsoft.AspNetCore.Identity
+@using cem.Models
+@inject SignInManager<ApplicationUser> SignInManager
+
+@functions {
+    private string returnUrl = string.Empty;
+    private string email = string.Empty;
+    private string password = string.Empty;
+    private bool rememberMe;
+
+    public async Task<IActionResult> OnGetAsync()
+    {
+        returnUrl = Request.Query["returnUrl"].ToString();
+        email = Request.Query["email"].ToString();
+        password = Request.Query["password"].ToString();
+        rememberMe = bool.Parse(Request.Query["rememberMe"].ToString() ?? "false");
+
+        var user = await SignInManager.UserManager.FindByEmailAsync(email);
+        if (user != null)
+        {
+            var result = await SignInManager.PasswordSignInAsync(user, password, rememberMe, false);
+            if (result.Succeeded)
+            {
+                var roles = await SignInManager.UserManager.GetRolesAsync(user);
+                var claims = new List<System.Security.Claims.Claim>
+                {
+                    new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, user.UserName ?? string.Empty),
+                    new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Email, user.Email ?? string.Empty)
+                };
+
+                foreach (var role in roles)
+                {
+                    claims.Add(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, role));
+                }
+
+                await SignInManager.SignInWithClaimsAsync(user, rememberMe, claims);
+                return Redirect("/");
+            }
+        }
+        return Redirect("/login?error=1");
+    }
+} 

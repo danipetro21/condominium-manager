@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using cem.Data;
 
@@ -11,9 +12,11 @@ using cem.Data;
 namespace cem.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250319122558_InitialCreate")]
+    partial class InitialCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -153,54 +156,6 @@ namespace cem.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
-                });
-
-            modelBuilder.Entity("cem.Models.AppFile", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ContentType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("EntityId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("EntityType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("FilePath")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<long>("FileSize")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("UploadDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UploadedById")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("EntityId");
-
-                    b.HasIndex("UploadedById");
-
-                    b.HasIndex("EntityType", "EntityId");
-
-                    b.ToTable("Files");
                 });
 
             modelBuilder.Entity("cem.Models.ApplicationUser", b =>
@@ -356,6 +311,9 @@ namespace cem.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<string>("ReceiptPath")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -477,23 +435,6 @@ namespace cem.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("cem.Models.AppFile", b =>
-                {
-                    b.HasOne("cem.Models.Expense", null)
-                        .WithMany("Files")
-                        .HasForeignKey("EntityId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("cem.Models.ApplicationUser", "UploadedBy")
-                        .WithMany("Files")
-                        .HasForeignKey("UploadedById")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("UploadedBy");
-                });
-
             modelBuilder.Entity("cem.Models.Expense", b =>
                 {
                     b.HasOne("cem.Models.ApplicationUser", "ApprovedBy")
@@ -563,19 +504,12 @@ namespace cem.Migrations
 
                     b.Navigation("CreatedExpenses");
 
-                    b.Navigation("Files");
-
                     b.Navigation("Notifications");
                 });
 
             modelBuilder.Entity("cem.Models.Condominium", b =>
                 {
                     b.Navigation("Expenses");
-                });
-
-            modelBuilder.Entity("cem.Models.Expense", b =>
-                {
-                    b.Navigation("Files");
                 });
 #pragma warning restore 612, 618
         }

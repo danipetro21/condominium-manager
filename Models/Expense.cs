@@ -14,39 +14,42 @@ namespace cem.Models
     {
         public int Id { get; set; }
 
-        [Required]
-        [StringLength(500)]
-        public required string Description { get; set; }
+        [Required(ErrorMessage = "La descrizione è obbligatoria")]
+        [StringLength(500, ErrorMessage = "La descrizione non può superare i 500 caratteri")]
+        public string Description { get; set; } = string.Empty;
 
-        [Required]
-        [Range(0, double.MaxValue)]
+        [Required(ErrorMessage = "L'importo è obbligatorio")]
+        [Range(0.01, double.MaxValue, ErrorMessage = "L'importo deve essere maggiore di zero")]
         public decimal Amount { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "La data è obbligatoria")]
         public DateTime Date { get; set; }
 
-        [Required]
-        [StringLength(100)]
-        public required string Type { get; set; }
-
-        [Required]
-        public ExpenseStatus Status { get; set; } = ExpenseStatus.Pending;
-
-        public string? AttachmentPath { get; set; }
+        [Required(ErrorMessage = "La categoria è obbligatoria")]
+        public ExpenseCategory Category { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
         public DateTime? ApprovedAt { get; set; }
+        public ExpenseStatus Status { get; set; } = ExpenseStatus.Pending;
 
-        public string? RejectionReason { get; set; }
-
+        // Relazioni
+        public string CreatedById { get; set; } = string.Empty;
+        public ApplicationUser CreatedBy { get; set; } = null!;
+        public string? ApprovedById { get; set; }
+        public ApplicationUser? ApprovedBy { get; set; }
         public int CondominiumId { get; set; }
-        public required Condominium Condominium { get; set; }
+        public Condominium Condominium { get; set; } = null!;
+        
+        // Relazione con i file
+        public virtual ICollection<AppFile> Files { get; set; } = new List<AppFile>();
+    }
 
-        public int CreatedById { get; set; }
-        public required User CreatedBy { get; set; }
-
-        public int? ApprovedById { get; set; }
-        public virtual User? ApprovedBy { get; set; }
+    public enum ExpenseCategory
+    {
+        Manutenzione,
+        Pulizia,
+        Energia,
+        Assicurazione,
+        Altro
     }
 } 

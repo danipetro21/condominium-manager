@@ -1,29 +1,35 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">CEM</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-    </div>
-</div>
+﻿@using Microsoft.AspNetCore.Components.Authorization
 
-<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="oi oi-home" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-    </nav>
-</div>
+<MudNavMenu>
+    <MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="pa-4">Menu</MudText>
+    
+    <AuthorizeView>
+        <Authorized>
+            <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">
+                Dashboard
+            </MudNavLink>
 
-@code {
-    private bool collapseNavMenu = true;
+            <MudNavGroup Title="Gestione" Icon="@Icons.Material.Filled.ManageAccounts" Expanded="true">
+                <MudNavLink Href="/condominiums" Icon="@Icons.Material.Filled.Business">
+                    Condomini
+                </MudNavLink>
+                <MudNavLink Href="/expenses" Icon="@Icons.Material.Filled.Receipt">
+                    Spese
+                </MudNavLink>
+            </MudNavGroup>
 
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
-    private void ToggleNavMenu()
-    {
-        collapseNavMenu = !collapseNavMenu;
-    }
-}
+            <AuthorizeView Roles="Master">
+                <Authorized Context="adminContext">
+                    <MudNavGroup Title="Amministrazione" Icon="@Icons.Material.Filled.AdminPanelSettings">
+                        <MudNavLink Href="/utenti" Icon="@Icons.Material.Filled.People">
+                            Utenti
+                        </MudNavLink>
+                        <MudNavLink Href="/impostazioni" Icon="@Icons.Material.Filled.Settings">
+                            Impostazioni
+                        </MudNavLink>
+                    </MudNavGroup>
+                </Authorized>
+            </AuthorizeView>
+        </Authorized>
+    </AuthorizeView>
+</MudNavMenu>

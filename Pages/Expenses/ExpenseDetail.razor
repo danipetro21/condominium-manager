@@ -1,0 +1,179 @@
+@page "/expenses/{Id:int}"
+@using cem.Models
+@using cem.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Microsoft.Extensions.Logging
+@using MudBlazor
+@attribute [Authorize]
+@inject ExpenseService ExpenseService
+@inject ISnackbar Snackbar
+@inject ILogger<ExpenseDetail> Logger
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager Navigation
+
+<PageTitle>Dettaglio Spesa - CEM App</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    @if (_expense == null)
+    {
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+    }
+    else
+    {
+        <MudPaper Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" Class="d-flex justify-space-between align-center">
+                    <MudText Typo="Typo.h4">Dettaglio Spesa</MudText>
+                    <MudButton Variant="Variant.Outlined" 
+                              Color="Color.Default" 
+                              OnClick="NavigateBack"
+                              StartIcon="@Icons.Material.Filled.ArrowBack">
+                        Indietro
+                    </MudButton>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudText><strong>Descrizione:</strong> @_expense.Description</MudText>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudText><strong>Importo:</strong> @_expense.Amount.ToString("N2") €</MudText>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudText><strong>Data:</strong> @_expense.Date.ToShortDateString()</MudText>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudText><strong>Categoria:</strong> @_expense.Category</MudText>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudText><strong>Condominio:</strong> @_expense.Condominium?.Name</MudText>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudText><strong>Stato:</strong> 
+                        <MudChip T="ExpenseStatus" Color="@GetStatusColor(_expense.Status)">
+                            @_expense.Status
+                        </MudChip>
+                    </MudText>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudText><strong>Creato da:</strong> @_expense.CreatedBy?.Email</MudText>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudText><strong>Data creazione:</strong> @_expense.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</MudText>
+                </MudItem>
+
+                @if (_expense.ApprovedBy != null)
+                {
+                    <MudItem xs="12" md="6">
+                        <MudText><strong>Approvato da:</strong> @_expense.ApprovedBy.Email</MudText>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudText><strong>Data approvazione:</strong> @_expense.ApprovedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</MudText>
+                    </MudItem>
+                }
+
+                @if (_expense.Files.Any())
+                {
+                    <MudItem xs="12">
+                        <MudDivider Class="my-4" />
+                        <MudText Typo="Typo.h6" Class="mb-2">File Allegati</MudText>
+                        @foreach (var file in _expense.Files)
+                        {
+                            <MudPaper Class="pa-2 mb-2" Elevation="0">
+                                <MudGrid>
+                                    <MudItem xs="12" Class="d-flex align-center">
+                                        <MudIcon Icon="@Icons.Material.Filled.AttachFile" Class="mr-2" />
+                                        <MudText>@file.FileName</MudText>
+                                        <MudSpacer />
+                                        <MudButton Variant="Variant.Outlined" 
+                                                  Color="Color.Primary" 
+                                                  Size="Size.Small"
+                                                  OnClick="@(() => DownloadFile(file))">
+                                            Scarica
+                                        </MudButton>
+                                    </MudItem>
+                                </MudGrid>
+                            </MudPaper>
+                        }
+                    </MudItem>
+                }
+            </MudGrid>
+        </MudPaper>
+    }
+</MudContainer>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Expense? _expense;
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                Navigation.NavigateTo("/login", true);
+                return;
+            }
+
+            _expense = await ExpenseService.GetExpenseAsync(Id, userId);
+            if (_expense == null)
+            {
+                Snackbar.Add("Spesa non trovata", Severity.Error);
+                Navigation.NavigateTo("/expenses");
+                return;
+            }
+
+            Logger.LogInformation($"Spesa caricata: {_expense.Id}, Numero file: {_expense.Files?.Count ?? 0}");
+            if (_expense.Files?.Any() == true)
+            {
+                foreach (var file in _expense.Files)
+                {
+                    Logger.LogInformation($"File trovato: {file.FileName} (ID: {file.Id})");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Errore durante il caricamento dei dettagli della spesa");
+            Snackbar.Add("Errore durante il caricamento dei dettagli della spesa", Severity.Error);
+            Navigation.NavigateTo("/expenses");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private Color GetStatusColor(ExpenseStatus status) => status switch
+    {
+        ExpenseStatus.Pending => Color.Warning,
+        ExpenseStatus.Approved => Color.Success,
+        ExpenseStatus.Rejected => Color.Error,
+        _ => Color.Default
+    };
+
+    private void NavigateBack()
+    {
+        Navigation.NavigateTo("/expenses");
+    }
+
+    private void DownloadFile(AppFile file)
+    {
+        try
+        {
+            Navigation.NavigateTo($"/uploads/{file.FilePath}", true);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Errore durante il download del file");
+            Snackbar.Add("Errore durante il download del file", Severity.Error);
+        }
+    }
+} 

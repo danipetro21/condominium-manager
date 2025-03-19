@@ -1,0 +1,73 @@
+@page "/login"
+@using Microsoft.AspNetCore.Identity
+@using cem.Models
+@using cem.Services
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+    <MudPaper Class="pa-8">
+        <MudText Typo="Typo.h4" Class="mb-8">Login</MudText>
+
+        <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
+            <DataAnnotationsValidator />
+
+            <MudTextField @bind-Value="loginModel.Email"
+                         Label="Email"
+                         Required="true"
+                         RequiredError="Email is required"
+                         InputType="InputType.Email"
+                         Class="mb-4" />
+
+            <MudTextField @bind-Value="loginModel.Password"
+                         Label="Password"
+                         Required="true"
+                         RequiredError="Password is required"
+                         InputType="InputType.Password"
+                         Class="mb-4" />
+
+            <MudButton ButtonType="ButtonType.Submit"
+                      Variant="Variant.Filled"
+                      Color="Color.Primary"
+                      Size="Size.Large"
+                      FullWidth="true">
+                Login
+            </MudButton>
+        </EditForm>
+
+        <MudText Class="mt-4">
+            Don't have an account? <MudLink Href="/register">Register</MudLink>
+        </MudText>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private LoginModel loginModel = new();
+
+    protected override void OnInitialized()
+    {
+        var uri = new Uri(NavigationManager.Uri);
+        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+        if (query.TryGetValue("error", out var error))
+        {
+            Snackbar.Add("Invalid login attempt", Severity.Error);
+        }
+    }
+
+    private void HandleLogin()
+    {
+        var returnUrl = Uri.EscapeDataString(NavigationManager.Uri);
+        var email = Uri.EscapeDataString(loginModel.Email);
+        var password = Uri.EscapeDataString(loginModel.Password);
+        var rememberMe = loginModel.RememberMe.ToString().ToLower();
+
+        NavigationManager.NavigateTo($"/Account/Login?returnUrl={returnUrl}&email={email}&password={password}&rememberMe={rememberMe}", true);
+    }
+
+    private class LoginModel
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public bool RememberMe { get; set; }
+    }
+} 

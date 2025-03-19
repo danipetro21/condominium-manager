@@ -1,0 +1,47 @@
+@page
+@using Microsoft.AspNetCore.Identity
+@using cem.Models
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+
+@functions {
+    private string email = string.Empty;
+    private string password = string.Empty;
+    private string confirmPassword = string.Empty;
+    private string firstName = string.Empty;
+    private string lastName = string.Empty;
+
+    public async Task<IActionResult> OnGetAsync()
+    {
+        email = Request.Query["email"].ToString();
+        password = Request.Query["password"].ToString();
+        confirmPassword = Request.Query["confirmPassword"].ToString();
+        firstName = Request.Query["firstName"].ToString();
+        lastName = Request.Query["lastName"].ToString();
+
+        if (password != confirmPassword)
+        {
+            return Redirect("/register?error=password_mismatch");
+        }
+
+        var user = new ApplicationUser
+        {
+            UserName = email,
+            Email = email,
+            FirstName = firstName,
+            LastName = lastName
+        };
+
+        var result = await UserManager.CreateAsync(user, password);
+
+        if (result.Succeeded)
+        {
+            await UserManager.AddToRoleAsync(user, "CondominiumManager");
+            await SignInManager.SignInAsync(user, isPersistent: false);
+            return Redirect("/");
+        }
+
+        var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+        return Redirect($"/register?error={Uri.EscapeDataString(errors)}");
+    }
+} 
