@@ -12,6 +12,10 @@
             ]
         }
     },
+    "remoteEnv": {
+        "PATH": "${containerEnv:PATH}:${containerEnv:HOME}/.dotnet/tools"
+    },
     "forwardPorts": [5000, 5001, 1433],
-    "postCreateCommand": "dotnet restore"
+    "postCreateCommand": "dotnet restore && echo 'export PATH=\"$PATH:$HOME/.dotnet/tools\"' >> ~/.bashrc",
+    "postStartCommand": "dotnet watch run --urls 'http://0.0.0.0:5000;https://0.0.0.0:5001'"
 } 

@@ -13,6 +13,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - DOTNET_USE_POLLING_FILE_WATCHER=true
+      - ASPNETCORE_URLS=https://+:5001;http://+:5000
     depends_on:
       - db
 
