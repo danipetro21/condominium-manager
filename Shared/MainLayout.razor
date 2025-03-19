@@ -1,6 +1,10 @@
 ﻿@inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Authorization
 @using cem.Services
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Components
+@using System.Security.Claims
+@using cem.Models
 
 <MudThemeProvider />
 <MudDialogProvider />
@@ -13,13 +17,22 @@
         <MudSpacer />
         <AuthorizeView>
             <Authorized>
+                @{
+                    var email = context.User.FindFirst(ClaimTypes.Email)?.Value;
+                    var role = context.User.FindFirst(ClaimTypes.Role)?.Value ?? "User";
+                }
+                <MudText Typo="Typo.body1" Class="mr-4">
+                    Benvenuto, @email
+                    <MudChip T="string" Color="Color.Primary" Size="Size.Small" Class="ml-2">
+                        @role
+                    </MudChip>
+                </MudText>
                 <MudIconButton Icon="@Icons.Material.Filled.Logout" 
                              Color="Color.Inherit" 
-                             OnClick="Logout" 
-                             Title="Logout" />
+                             OnClick="Logout" />
                 <MudMenu Icon="@Icons.Material.Filled.Person" Color="Color.Inherit" direction="Direction.Bottom" offsetY="true">
                     <MudText Typo="Typo.body2" Class="px-4 py-2">
-                        Ciao, @context.User.Identity?.Name!
+                        Ciao, @email
                     </MudText>
                     <MudDivider />
                     <MudMenuItem OnClick="Logout" Icon="@Icons.Material.Filled.Logout">Logout</MudMenuItem>

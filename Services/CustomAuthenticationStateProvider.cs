@@ -27,7 +27,22 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
             var user = await _userManager.GetUserAsync(httpContext.User);
             if (user != null)
             {
-                var claims = await _userManager.GetClaimsAsync(user);
+                var claims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
+                    new Claim(ClaimTypes.Email, user.Email ?? string.Empty)
+                };
+
+                var roles = await _userManager.GetRolesAsync(user);
+                foreach (var role in roles)
+                {
+                    claims.Add(new Claim(ClaimTypes.Role, role));
+                }
+
+                var existingClaims = await _userManager.GetClaimsAsync(user);
+                await _userManager.RemoveClaimsAsync(user, existingClaims);
+                await _userManager.AddClaimsAsync(user, claims);
+
                 _currentUser = new ClaimsPrincipal(new ClaimsIdentity(claims, "Custom"));
             }
         }
@@ -39,7 +54,23 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
     {
         if (user != null)
         {
-            var claims = await _userManager.GetClaimsAsync(user);
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
+                new Claim(ClaimTypes.Email, user.Email ?? string.Empty)
+            };
+
+            var roles = await _userManager.GetRolesAsync(user);
+            foreach (var role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+
+            // Salva le claims nel database
+            var existingClaims = await _userManager.GetClaimsAsync(user);
+            await _userManager.RemoveClaimsAsync(user, existingClaims);
+            await _userManager.AddClaimsAsync(user, claims);
+
             _currentUser = new ClaimsPrincipal(new ClaimsIdentity(claims, "Custom"));
         }
         else
