@@ -1,8 +1,6 @@
 @page "/register"
 @using Microsoft.AspNetCore.Identity
 @using cem.Models
-@inject UserManager<ApplicationUser> UserManager
-@inject SignInManager<ApplicationUser> SignInManager
 @inject NavigationManager NavigationManager
 @inject ISnackbar Snackbar
 
@@ -64,36 +62,25 @@
 @code {
     private RegisterModel registerModel = new();
 
-    private async Task HandleRegister()
+    protected override void OnInitialized()
     {
-        if (registerModel.Password != registerModel.ConfirmPassword)
+        var uri = new Uri(NavigationManager.Uri);
+        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+        if (query.TryGetValue("error", out var error))
         {
-            Snackbar.Add("Passwords do not match", Severity.Error);
-            return;
+            Snackbar.Add(error.ToString(), Severity.Error);
         }
+    }
 
-        var user = new ApplicationUser
-        {
-            UserName = registerModel.Email,
-            Email = registerModel.Email,
-            FirstName = registerModel.FirstName,
-            LastName = registerModel.LastName
-        };
+    private void HandleRegister()
+    {
+        var email = Uri.EscapeDataString(registerModel.Email);
+        var password = Uri.EscapeDataString(registerModel.Password);
+        var confirmPassword = Uri.EscapeDataString(registerModel.ConfirmPassword);
+        var firstName = Uri.EscapeDataString(registerModel.FirstName);
+        var lastName = Uri.EscapeDataString(registerModel.LastName);
 
-        var result = await UserManager.CreateAsync(user, registerModel.Password);
-
-        if (result.Succeeded)
-        {
-            await SignInManager.SignInAsync(user, isPersistent: false);
-            NavigationManager.NavigateTo("/");
-        }
-        else
-        {
-            foreach (var error in result.Errors)
-            {
-                Snackbar.Add(error.Description, Severity.Error);
-            }
-        }
+        NavigationManager.NavigateTo($"/Account/Register?email={email}&password={password}&confirmPassword={confirmPassword}&firstName={firstName}&lastName={lastName}", true);
     }
 
     private class RegisterModel
