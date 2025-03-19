@@ -1,0 +1,251 @@
+@page "/expenses/create"
+@page "/expenses/edit/{Id:int}"
+@using cem.Models
+@using cem.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Microsoft.Extensions.Logging
+@using MudBlazor
+@using Microsoft.AspNetCore.Components.Forms
+@using MudBlazor.Utilities
+@attribute [Authorize]
+@inject ExpenseService ExpenseService
+@inject ISnackbar Snackbar
+@inject ILogger<ExpenseForm> Logger
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager Navigation
+
+<PageTitle>@(_expense == null ? "Nuova Spesa" : "Modifica Spesa") - CEM App</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    <MudPaper Class="pa-4">
+        <MudText Typo="Typo.h4" Class="mb-4">@(_expense == null ? "Nuova Spesa" : "Modifica Spesa")</MudText>
+
+        <MudForm @ref="_form" @bind-IsValid="@_isValid">
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="_expense.Description"
+                                 Label="Descrizione"
+                                 Required="true"
+                                 RequiredError="La descrizione è obbligatoria" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudNumericField @bind-Value="_expense.Amount"
+                                   Label="Importo"
+                                   Required="true"
+                                   RequiredError="L'importo è obbligatorio"
+                                   Min="0.01m"
+                                   Format="N2" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudDatePicker Date="_expense.Date"
+                                  DateChanged="@(async (DateTime? date) => { if (date.HasValue) _expense.Date = date.Value; })"
+                                  Label="Data"
+                                  Required="true"
+                                  RequiredError="La data è obbligatoria"
+                                  DateFormat="dd/MM/yyyy" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudSelect T="int" @bind-Value="_expense.CondominiumId"
+                              Label="Condominio"
+                              Required="true"
+                              RequiredError="Il condominio è obbligatorio">
+                        @foreach (var condominium in _condominiums)
+                        {
+                            <MudSelectItem T="int" Value="@condominium.Id">@condominium.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudSelect T="ExpenseCategory" @bind-Value="_expense.Category"
+                              Label="Categoria"
+                              Required="true"
+                              RequiredError="La categoria è obbligatoria">
+                        @foreach (var category in Enum.GetValues<ExpenseCategory>())
+                        {
+                            <MudSelectItem T="ExpenseCategory" Value="@category">@category</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12">
+                    <InputFile OnChange="HandleFileSelected" class="d-none" id="receipt-upload" accept=".pdf,.jpg,.jpeg,.png" />
+                    <MudButton HtmlTag="label"
+                              Variant="Variant.Outlined"
+                              StartIcon="@Icons.Material.Filled.AttachFile"
+                              for="receipt-upload">
+                        @(_expense.ReceiptPath != null ? "Cambia ricevuta" : "Carica ricevuta")
+                    </MudButton>
+                    @if (_expense.ReceiptPath != null)
+                    {
+                        <MudText Class="ml-2">@_expense.ReceiptPath</MudText>
+                    }
+                </MudItem>
+            </MudGrid>
+
+            <MudGrid Class="mt-4">
+                <MudItem xs="12" Class="d-flex justify-end">
+                    <MudButton Variant="Variant.Outlined" 
+                              Color="Color.Default" 
+                              OnClick="Cancel" 
+                              Class="mr-2">
+                        Annulla
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled" 
+                              Color="Color.Primary" 
+                              OnClick="Submit" 
+                              Disabled="@(!_isValid)">
+                        @(_expense == null ? "Crea" : "Salva")
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private Expense _expense = new();
+    private MudForm _form = null!;
+    private bool _isValid;
+    private IBrowserFile? _selectedFile;
+    private List<Condominium> _condominiums = new();
+    private bool _isInitialized;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Logger.LogInformation($"Inizializzazione ExpenseForm (Id: {Id})");
+            
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            
+            if (!IsUserValid(user))
+            {
+                Navigation.NavigateTo("/login", true);
+                return;
+            }
+
+            var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                Navigation.NavigateTo("/login", true);
+                return;
+            }
+
+            // Carica i condomini
+            await LoadCondominiumsAsync(userId);
+            
+            // Se è una modifica, carica la spesa
+            if (Id.HasValue)
+            {
+                var expense = await ExpenseService.GetExpenseAsync(Id.Value, userId);
+                if (expense == null)
+                {
+                    Snackbar.Add("Spesa non trovata", Severity.Error);
+                    Navigation.NavigateTo("/expenses");
+                    return;
+                }
+                _expense = expense;
+            }
+            else
+            {
+                _expense = new Expense
+                {
+                    Date = DateTime.Now,
+                    Status = ExpenseStatus.Pending,
+                    CreatedById = userId
+                };
+            }
+            
+            _isInitialized = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Errore durante l'inizializzazione del form");
+            Snackbar.Add("Errore durante il caricamento del form", Severity.Error);
+            Navigation.NavigateTo("/expenses");
+        }
+    }
+
+    private bool IsUserValid(ClaimsPrincipal? user)
+    {
+        if (user == null || user.Identity == null || !user.Identity.IsAuthenticated)
+        {
+            Logger.LogWarning("Utente non autenticato");
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task LoadCondominiumsAsync(string userId)
+    {
+        try
+        {
+            Logger.LogInformation($"Caricamento condomini per l'utente {userId}");
+            _condominiums = await ExpenseService.GetUserCondominiumsAsync(userId);
+            Logger.LogInformation($"Condomini caricati: {_condominiums.Count}");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Errore durante il caricamento dei condomini");
+            throw;
+        }
+    }
+
+    private void HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        _selectedFile = e.File;
+        StateHasChanged();
+    }
+
+    private async Task Submit()
+    {
+        if (!_isInitialized)
+        {
+            Logger.LogWarning("Tentativo di submit prima dell'inizializzazione");
+            return;
+        }
+
+        Logger.LogInformation("Inizio procedura Submit");
+        
+        await _form.Validate();
+        if (!_isValid)
+        {
+            Logger.LogWarning("Form non valido, Submit interrotto");
+            return;
+        }
+
+        try
+        {
+            if (Id == null)
+            {
+                Logger.LogInformation("Creazione nuova spesa");
+                await ExpenseService.CreateExpenseAsync(_expense);
+                Snackbar.Add("Spesa creata con successo", Severity.Success);
+            }
+            else
+            {
+                Logger.LogInformation($"Aggiornamento spesa esistente: {Id}");
+                await ExpenseService.UpdateExpenseAsync(_expense);
+                Snackbar.Add("Spesa aggiornata con successo", Severity.Success);
+            }
+
+            Navigation.NavigateTo("/expenses");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Errore durante il salvataggio della spesa");
+            Snackbar.Add("Errore durante il salvataggio della spesa", Severity.Error);
+        }
+    }
+
+    private void Cancel()
+    {
+        Logger.LogInformation("Annullamento operazione");
+        Navigation.NavigateTo("/expenses");
+    }
+} 

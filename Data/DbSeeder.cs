@@ -173,95 +173,102 @@ public static class DbSeeder
         await context.SaveChangesAsync();
 
         // Creazione di spese di esempio
-        var expenses = new[]
+        if (manager1 != null && residenzaSole != null && adminUser != null)
         {
-            new Expense
+            var expenses = new[]
             {
-                Description = "Manutenzione ascensore",
-                Amount = 1500.00m,
-                Date = DateTime.UtcNow.AddDays(-30),
-                Type = "Manutenzione",
-                Status = ExpenseStatus.Approved,
-                CreatedAt = DateTime.UtcNow.AddDays(-31),
-                ApprovedAt = DateTime.UtcNow.AddDays(-30),
-                Condominium = residenzaSole!,
-                CreatedBy = manager1!,
-                ApprovedBy = adminUser
-            },
-            new Expense
-            {
-                Description = "Pulizia scale",
-                Amount = 800.00m,
-                Date = DateTime.UtcNow.AddDays(-15),
-                Type = "Pulizia",
-                Status = ExpenseStatus.Pending,
-                CreatedAt = DateTime.UtcNow.AddDays(-15),
-                Condominium = villaVerde!,
-                CreatedBy = manager2!
-            },
-            new Expense
-            {
-                Description = "Riparazione caldaia",
-                Amount = 2500.00m,
-                Date = DateTime.UtcNow.AddDays(-10),
-                Type = "Manutenzione",
-                Status = ExpenseStatus.Rejected,
-                CreatedAt = DateTime.UtcNow.AddDays(-10),
-                RejectionReason = "Preventivo troppo alto",
-                Condominium = palazzoModerno!,
-                CreatedBy = manager3!
-            }
-        };
+                new Expense
+                {
+                    Description = "Pulizia scale",
+                    Amount = 150.00m,
+                    Date = DateTime.Now.AddDays(-5),
+                    Category = ExpenseCategory.Pulizia,
+                    Status = ExpenseStatus.Pending,
+                    CreatedById = manager1.Id,
+                    CondominiumId = residenzaSole.Id
+                },
+                new Expense
+                {
+                    Description = "Manutenzione ascensore",
+                    Amount = 500.00m,
+                    Date = DateTime.Now.AddDays(-3),
+                    Category = ExpenseCategory.Manutenzione,
+                    Status = ExpenseStatus.Approved,
+                    CreatedById = manager1.Id,
+                    ApprovedById = adminUser.Id,
+                    ApprovedAt = DateTime.Now.AddDays(-2),
+                    CondominiumId = residenzaSole.Id
+                },
+                new Expense
+                {
+                    Description = "Bolletta luce",
+                    Amount = 200.00m,
+                    Date = DateTime.Now.AddDays(-1),
+                    Category = ExpenseCategory.Energia,
+                    Status = ExpenseStatus.Rejected,
+                    CreatedById = manager1.Id,
+                    ApprovedById = adminUser.Id,
+                    ApprovedAt = DateTime.Now,
+                    CondominiumId = residenzaSole.Id
+                }
+            };
 
-        foreach (var expense in expenses)
-        {
-            if (!context.Expenses.Any(e => e.Description == expense.Description && e.CondominiumId == expense.Condominium.Id))
+            foreach (var expense in expenses)
             {
-                context.Expenses.Add(expense);
+                if (!context.Expenses.Any(e => e.Description == expense.Description && e.CondominiumId == expense.CondominiumId))
+                {
+                    context.Expenses.Add(expense);
+                }
+            }
+
+            await context.SaveChangesAsync();
+
+            // Creazione di notifiche di esempio
+            if (manager1 != null && manager2 != null && manager3 != null)
+            {
+                var notifications = new[]
+                {
+                    new Notification
+                    {
+                        Title = "Spesa approvata",
+                        Message = "La spesa per la manutenzione dell'ascensore è stata approvata",
+                        Type = NotificationType.ExpenseApproved,
+                        CreatedAt = DateTime.UtcNow.AddDays(-30),
+                        UserId = manager1.Id,
+                        User = manager1,
+                        ExpenseId = expenses[1].Id
+                    },
+                    new Notification
+                    {
+                        Title = "Spesa rifiutata",
+                        Message = "La spesa per la riparazione della caldaia è stata rifiutata: Preventivo troppo alto",
+                        Type = NotificationType.ExpenseRejected,
+                        CreatedAt = DateTime.UtcNow.AddDays(-10),
+                        UserId = manager3.Id,
+                        User = manager3,
+                        ExpenseId = expenses[2].Id
+                    },
+                    new Notification
+                    {
+                        Title = "Rate in scadenza",
+                        Message = "Ricorda che hai delle rate in scadenza per il mese corrente",
+                        Type = NotificationType.PaymentDue,
+                        CreatedAt = DateTime.UtcNow.AddDays(-5),
+                        UserId = manager2.Id,
+                        User = manager2
+                    }
+                };
+
+                foreach (var notification in notifications)
+                {
+                    if (!context.Notifications.Any(n => n.Title == notification.Title && n.UserId == notification.UserId))
+                    {
+                        context.Notifications.Add(notification);
+                    }
+                }
+
+                await context.SaveChangesAsync();
             }
         }
-
-        await context.SaveChangesAsync();
-
-        // Creazione di notifiche di esempio
-        var notifications = new[]
-        {
-            new Notification
-            {
-                Title = "Spesa approvata",
-                Message = "La spesa per la manutenzione dell'ascensore è stata approvata",
-                Type = NotificationType.ExpenseApproved,
-                CreatedAt = DateTime.UtcNow.AddDays(-30),
-                User = manager1!,
-                Expense = expenses[0]
-            },
-            new Notification
-            {
-                Title = "Spesa rifiutata",
-                Message = "La spesa per la riparazione della caldaia è stata rifiutata: Preventivo troppo alto",
-                Type = NotificationType.ExpenseRejected,
-                CreatedAt = DateTime.UtcNow.AddDays(-10),
-                User = manager3!,
-                Expense = expenses[2]
-            },
-            new Notification
-            {
-                Title = "Rate in scadenza",
-                Message = "Ricorda che hai delle rate in scadenza per il mese corrente",
-                Type = NotificationType.PaymentDue,
-                CreatedAt = DateTime.UtcNow.AddDays(-5),
-                User = manager2!
-            }
-        };
-
-        foreach (var notification in notifications)
-        {
-            if (!context.Notifications.Any(n => n.Title == notification.Title && n.UserId == notification.UserId))
-            {
-                context.Notifications.Add(notification);
-            }
-        }
-
-        await context.SaveChangesAsync();
     }
 } 

@@ -1,0 +1,180 @@
+@page "/expenses"
+@using cem.Models
+@using cem.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.Extensions.Logging
+@using System.Security.Claims
+@inject ExpenseService ExpenseService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+@inject ILogger<ExpenseList> Logger
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Gestione Spese - CEM App</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudPaper Class="pa-4">
+        <MudGrid>
+            <MudItem xs="12" Class="d-flex justify-space-between align-center">
+                <MudText Typo="Typo.h4">Gestione Spese</MudText>
+                <MudButton Variant="Variant.Filled" 
+                          Color="Color.Primary" 
+                          StartIcon="@Icons.Material.Filled.Add"
+                          OnClick="OpenCreateForm">
+                    Nuova Spesa
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+
+        @if (_expenses == null)
+        {
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        }
+        else if (!_expenses.Any())
+        {
+            <MudAlert Severity="Severity.Info" Class="mt-4">
+                Nessuna spesa trovata. Clicca su "Nuova Spesa" per crearne una.
+            </MudAlert>
+        }
+        else
+        {
+            <MudTable Items="@_expenses" Dense="true" Hover="true" Bordered="true" Striped="true" Class="mt-4">
+                <HeaderContent>
+                    <MudTh>Data</MudTh>
+                    <MudTh>Descrizione</MudTh>
+                    <MudTh>Categoria</MudTh>
+                    <MudTh>Importo</MudTh>
+                    <MudTh>Stato</MudTh>
+                    <MudTh>Azioni</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Data">@context.Date.ToShortDateString()</MudTd>
+                    <MudTd DataLabel="Descrizione">@context.Description</MudTd>
+                    <MudTd DataLabel="Categoria">@context.Category</MudTd>
+                    <MudTd DataLabel="Importo">@context.Amount.ToString("C")</MudTd>
+                    <MudTd DataLabel="Stato">
+                        <MudChip T="ExpenseStatus" Color="@GetStatusColor(context.Status)">
+                            @context.Status
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Azioni">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                     Color="Color.Primary" 
+                                     OnClick="@(() => OpenEditForm(context))" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                     Color="Color.Error" 
+                                     OnClick="@(() => DeleteExpense(context))" />
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<Expense>? _expenses;
+    private ClaimsPrincipal? _user;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            _user = authState.User;
+            
+            Logger.LogInformation($"User authenticated: {_user?.Identity?.IsAuthenticated}");
+            Logger.LogInformation($"User claims: {string.Join(", ", _user?.Claims.Select(c => $"{c.Type}: {c.Value}") ?? Array.Empty<string>())}");
+
+            if (_user == null || _user.Identity == null || !_user.Identity.IsAuthenticated)
+            {
+                Logger.LogWarning("User not authenticated, redirecting to login");
+                Navigation.NavigateTo("/login", true);
+                return;
+            }
+
+            await LoadExpenses();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Errore durante l'inizializzazione della pagina");
+            Snackbar.Add("Errore durante il caricamento delle spese", Severity.Error);
+        }
+    }
+
+    private async Task LoadExpenses()
+    {
+        try
+        {
+            if (_user == null || _user.Identity == null || !_user.Identity.IsAuthenticated)
+            {
+                Logger.LogWarning("User not authenticated in LoadExpenses");
+                return;
+            }
+
+            var userId = _user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                Logger.LogWarning("User ID not found in claims");
+                Snackbar.Add("Utente non autenticato", Severity.Error);
+                return;
+            }
+
+            var isAdmin = _user.IsInRole("Admin");
+
+            Logger.LogInformation($"Loading expenses for user {userId} (Admin: {isAdmin})");
+
+            _expenses = await ExpenseService.GetExpensesAsync(userId, isAdmin);
+            Logger.LogInformation($"Loaded {_expenses?.Count ?? 0} expenses");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Errore durante il caricamento delle spese");
+            Snackbar.Add("Errore durante il caricamento delle spese", Severity.Error);
+        }
+    }
+
+    private void OpenCreateForm()
+    {
+        Navigation.NavigateTo("/expenses/create");
+    }
+
+    private void OpenEditForm(Expense expense)
+    {
+        Navigation.NavigateTo($"/expenses/edit/{expense.Id}");
+    }
+
+    private async Task DeleteExpense(Expense expense)
+    {
+        if (_user == null) return;
+
+        try
+        {
+            var userId = _user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                Logger.LogWarning("User ID not found in claims during delete");
+                return;
+            }
+
+            var isAdmin = _user.IsInRole("Admin");
+
+            await ExpenseService.DeleteExpenseAsync(expense.Id, userId, isAdmin);
+            await LoadExpenses();
+            Snackbar.Add("Spesa eliminata con successo", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Errore durante l'eliminazione della spesa");
+            Snackbar.Add("Errore durante l'eliminazione della spesa", Severity.Error);
+        }
+    }
+
+    private Color GetStatusColor(ExpenseStatus status) => status switch
+    {
+        ExpenseStatus.Pending => Color.Warning,
+        ExpenseStatus.Approved => Color.Success,
+        ExpenseStatus.Rejected => Color.Error,
+        _ => Color.Default
+    };
+}

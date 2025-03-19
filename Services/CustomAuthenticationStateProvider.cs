@@ -10,6 +10,8 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private ClaimsPrincipal _currentUser = new(new ClaimsIdentity());
+    private ApplicationUser? _cachedUser;
+    private bool _isInitialized;
 
     public CustomAuthenticationStateProvider(
         UserManager<ApplicationUser> userManager,
@@ -21,14 +23,67 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
+        if (_isInitialized)
+        {
+            return new AuthenticationState(_currentUser);
+        }
+
         var httpContext = _httpContextAccessor.HttpContext;
         if (httpContext?.User?.Identity?.IsAuthenticated == true)
         {
-            var user = await _userManager.GetUserAsync(httpContext.User);
-            if (user != null)
+            try
+            {
+                if (_cachedUser == null)
+                {
+                    _cachedUser = await _userManager.GetUserAsync(httpContext.User);
+                }
+
+                if (_cachedUser != null)
+                {
+                    var claims = new List<Claim>
+                    {
+                        new Claim(ClaimTypes.NameIdentifier, _cachedUser.Id),
+                        new Claim(ClaimTypes.Name, _cachedUser.UserName ?? string.Empty),
+                        new Claim(ClaimTypes.Email, _cachedUser.Email ?? string.Empty)
+                    };
+
+                    var roles = await _userManager.GetRolesAsync(_cachedUser);
+                    foreach (var role in roles)
+                    {
+                        claims.Add(new Claim(ClaimTypes.Role, role));
+                    }
+
+                    _currentUser = new ClaimsPrincipal(new ClaimsIdentity(claims, "Custom"));
+                }
+            }
+            catch (Exception)
+            {
+                // In caso di errore, manteniamo l'utente non autenticato
+                _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
+            }
+        }
+        else
+        {
+            _cachedUser = null;
+            _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
+        }
+
+        _isInitialized = true;
+        return new AuthenticationState(_currentUser);
+    }
+
+    public async Task UpdateAuthenticationStateAsync(ApplicationUser? user)
+    {
+        _cachedUser = user;
+        _isInitialized = false;
+
+        if (user != null)
+        {
+            try
             {
                 var claims = new List<Claim>
                 {
+                    new Claim(ClaimTypes.NameIdentifier, user.Id),
                     new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
                     new Claim(ClaimTypes.Email, user.Email ?? string.Empty)
                 };
@@ -39,39 +94,12 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
                     claims.Add(new Claim(ClaimTypes.Role, role));
                 }
 
-                var existingClaims = await _userManager.GetClaimsAsync(user);
-                await _userManager.RemoveClaimsAsync(user, existingClaims);
-                await _userManager.AddClaimsAsync(user, claims);
-
                 _currentUser = new ClaimsPrincipal(new ClaimsIdentity(claims, "Custom"));
             }
-        }
-
-        return new AuthenticationState(_currentUser);
-    }
-
-    public async Task UpdateAuthenticationStateAsync(ApplicationUser? user)
-    {
-        if (user != null)
-        {
-            var claims = new List<Claim>
+            catch (Exception)
             {
-                new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
-                new Claim(ClaimTypes.Email, user.Email ?? string.Empty)
-            };
-
-            var roles = await _userManager.GetRolesAsync(user);
-            foreach (var role in roles)
-            {
-                claims.Add(new Claim(ClaimTypes.Role, role));
+                _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
             }
-
-            // Salva le claims nel database
-            var existingClaims = await _userManager.GetClaimsAsync(user);
-            await _userManager.RemoveClaimsAsync(user, existingClaims);
-            await _userManager.AddClaimsAsync(user, claims);
-
-            _currentUser = new ClaimsPrincipal(new ClaimsIdentity(claims, "Custom"));
         }
         else
         {
