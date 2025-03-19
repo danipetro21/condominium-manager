@@ -76,15 +76,12 @@
                         <MudIconButton Icon="@Icons.Material.Filled.Visibility" 
                                      Color="Color.Info" 
                                      OnClick="@(() => Navigation.NavigateTo($"/expenses/{context.Id}"))" />
-                        @if (!_isAdmin)
-                        {
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit" 
-                                         Color="Color.Primary" 
-                                         OnClick="@(() => OpenEditForm(context))" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete" 
-                                         Color="Color.Error" 
-                                         OnClick="@(() => DeleteExpense(context))" />
-                        }
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                     Color="Color.Primary" 
+                                     OnClick="@(() => OpenEditForm(context))" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                     Color="Color.Error" 
+                                     OnClick="@(() => DeleteExpense(context))" />
                     </MudTd>
                 </RowTemplate>
             </MudTable>

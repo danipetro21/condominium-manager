@@ -1,0 +1,190 @@
+@page "/admin/users"
+@using Microsoft.AspNetCore.Authorization
+@using cem.Models
+@using cem.Services
+@attribute [Authorize(Roles = "Admin")]
+@inject UserService UserService
+@inject ISnackbar Snackbar
+@inject ILogger<UserManagement> Logger
+@inject NavigationManager NavigationManager
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudPaper Class="pa-4">
+        <MudText Typo="Typo.h4" Class="mb-4">Gestione Utenti</MudText>
+
+        <MudButton Color="Color.Primary" 
+                  Variant="Variant.Filled" 
+                  OnClick="@(() => NavigationManager.NavigateTo("/admin/users/create"))" 
+                  StartIcon="@Icons.Material.Filled.Add"
+                  Class="mb-4">
+            Nuovo Utente
+        </MudButton>
+
+        <MudTable Items="@users" 
+                 Dense="true" 
+                 Hover="true" 
+                 Loading="@loading" 
+                 LoadingProgressColor="Color.Info"
+                 Elevation="0"
+                 Class="mt-4">
+            <HeaderContent>
+                <MudTh>Nome</MudTh>
+                <MudTh>Cognome</MudTh>
+                <MudTh>Email</MudTh>
+                <MudTh>Ruolo</MudTh>
+                <MudTh Style="text-align: right">Azioni</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Nome">@context.FirstName</MudTd>
+                <MudTd DataLabel="Cognome">@context.LastName</MudTd>
+                <MudTd DataLabel="Email">@context.Email</MudTd>
+                <MudTd DataLabel="Ruolo">
+                    <MudText Class="@($"pa-1 rounded-pill mud-theme-{GetRoleColor(GetUserRole(context)).ToString().ToLower()}")"
+                            Style="display: inline-block; font-size: 0.875rem;">
+                        @GetUserRole(context)
+                    </MudText>
+                </MudTd>
+                <MudTd Style="text-align: right">
+                    <MudTooltip Text="Modifica">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                     Color="Color.Primary" 
+                                     Size="Size.Small"
+                                     OnClick="@(() => NavigationManager.NavigateTo($"/admin/users/edit/{context.Id}"))" />
+                    </MudTooltip>
+                    <MudTooltip Text="Elimina">
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                     Color="Color.Error" 
+                                     Size="Size.Small"
+                                     OnClick="@(() => OpenDeleteDialog(context))" />
+                    </MudTooltip>
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText>Nessun utente trovato.</MudText>
+            </NoRecordsContent>
+            <LoadingContent>
+                <MudText>Caricamento utenti...</MudText>
+            </LoadingContent>
+        </MudTable>
+    </MudPaper>
+</MudContainer>
+
+@if (showDeleteDialog)
+{
+    <MudDialog IsVisible="showDeleteDialog" OnClosed="CloseDeleteDialog">
+        <TitleContent>
+            <MudText Typo="Typo.h6">Conferma Eliminazione</MudText>
+        </TitleContent>
+        <DialogContent>
+            <MudAlert Severity="Severity.Warning" Class="mb-4">
+                Questa azione non può essere annullata.
+            </MudAlert>
+            <MudText>
+                Sei sicuro di voler eliminare l'utente <strong>@deleteUser?.Email</strong>?
+            </MudText>
+        </DialogContent>
+        <DialogActions>
+            <MudButton OnClick="CloseDeleteDialog" 
+                      Variant="Variant.Outlined" 
+                      Color="Color.Default">Annulla</MudButton>
+            <MudButton OnClick="DeleteUser" 
+                      Variant="Variant.Filled" 
+                      Color="Color.Error">Elimina</MudButton>
+        </DialogActions>
+    </MudDialog>
+}
+
+@code {
+    private List<ApplicationUser> users = new();
+    private List<string> roles = new();
+    private bool loading = true;
+    private Dictionary<string, string> userRoles = new();
+
+    // Delete
+    private bool showDeleteDialog;
+    private ApplicationUser? deleteUser;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        loading = true;
+        try
+        {
+            users = await UserService.GetUsersAsync();
+            roles = await UserService.GetAllRolesAsync();
+            
+            userRoles.Clear();
+            foreach (var user in users)
+            {
+                var userRole = (await UserService.GetUserRolesAsync(user)).FirstOrDefault() ?? "";
+                userRoles[user.Id] = userRole;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Errore durante il caricamento degli utenti");
+            Snackbar.Add("Errore durante il caricamento degli utenti", Severity.Error);
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private string GetUserRole(ApplicationUser user)
+    {
+        return userRoles.TryGetValue(user.Id, out var role) ? role : "";
+    }
+
+    private Color GetRoleColor(string role) => role switch
+    {
+        "Admin" => Color.Error,
+        "CondominiumManager" => Color.Primary,
+        _ => Color.Default
+    };
+
+    private void OpenDeleteDialog(ApplicationUser user)
+    {
+        deleteUser = user;
+        showDeleteDialog = true;
+    }
+
+    private void CloseDeleteDialog()
+    {
+        showDeleteDialog = false;
+        deleteUser = null;
+        StateHasChanged();
+    }
+
+    private async Task DeleteUser()
+    {
+        if (deleteUser == null) return;
+
+        try
+        {
+            var (succeeded, errors) = await UserService.DeleteUserAsync(deleteUser.Id);
+            if (succeeded)
+            {
+                Snackbar.Add("Utente eliminato con successo", Severity.Success);
+                await LoadData();
+                CloseDeleteDialog();
+            }
+            else
+            {
+                foreach (var error in errors)
+                {
+                    Snackbar.Add(error, Severity.Error);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Errore durante l'eliminazione dell'utente");
+            Snackbar.Add("Errore durante l'eliminazione dell'utente", Severity.Error);
+        }
+    }
+} 

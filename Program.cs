@@ -78,6 +78,7 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ExpenseService>();
 builder.Services.AddScoped<CondominiumService>();
 builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<UserService>();
 
 var app = builder.Build();
 

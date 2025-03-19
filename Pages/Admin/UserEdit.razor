@@ -1,0 +1,203 @@
+@page "/admin/users/create"
+@page "/admin/users/edit/{Id}"
+@using Microsoft.AspNetCore.Authorization
+@using System.ComponentModel.DataAnnotations
+@using cem.Models
+@using cem.Services
+@attribute [Authorize(Roles = "Admin")]
+@inject UserService UserService
+@inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+@inject ILogger<UserEdit> Logger
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    <MudPaper Class="pa-4">
+        <MudText Typo="Typo.h4" Class="mb-4">@(Id == null ? "Nuovo Utente" : "Modifica Utente")</MudText>
+
+        <MudForm @ref="form" @bind-IsValid="@isFormValid">
+            <MudGrid>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="user.FirstName" 
+                                Label="Nome" 
+                                Required="true"
+                                RequiredError="Il nome è obbligatorio"
+                                Immediate="true" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="user.LastName" 
+                                Label="Cognome" 
+                                Required="true"
+                                RequiredError="Il cognome è obbligatorio"
+                                Immediate="true" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="user.Email" 
+                                Label="Email" 
+                                Required="true"
+                                RequiredError="L'email è obbligatoria"
+                                Validation="@(new EmailAddressAttribute() {ErrorMessage = "Indirizzo email non valido"})"
+                                Immediate="true" />
+                </MudItem>
+                @if (Id == null)
+                {
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="password" 
+                                    Label="Password" 
+                                    InputType="@(showPassword ? InputType.Text : InputType.Password)"
+                                    Required="true"
+                                    RequiredError="La password è obbligatoria"
+                                    Validation="@(new Func<string, IEnumerable<string>>(ValidatePassword))"
+                                    Adornment="Adornment.End"
+                                    AdornmentIcon="@(showPassword ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
+                                    OnAdornmentClick="() => showPassword = !showPassword"
+                                    Immediate="true" />
+                    </MudItem>
+                }
+                <MudItem xs="12">
+                    <MudSelect T="string" 
+                             Label="Ruolo" 
+                             @bind-Value="selectedRole" 
+                             Required="true"
+                             RequiredError="Il ruolo è obbligatorio">
+                        @foreach (var role in roles)
+                        {
+                            <MudSelectItem Value="@role">@role</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+
+        <div class="d-flex justify-end mt-4">
+            <MudButton OnClick="GoBack" 
+                      Variant="Variant.Outlined" 
+                      Color="Color.Default"
+                      Class="mr-2">
+                Annulla
+            </MudButton>
+            <MudButton OnClick="SaveUser" 
+                      Variant="Variant.Filled" 
+                      Color="Color.Primary"
+                      Disabled="@(!isFormValid)">
+                @(Id == null ? "Crea" : "Salva")
+            </MudButton>
+        </div>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    [Parameter]
+    public string? Id { get; set; }
+
+    private MudForm form = null!;
+    private ApplicationUser user = new();
+    private string password = "";
+    private string selectedRole = "";
+    private List<string> roles = new();
+    private bool showPassword;
+    private bool isFormValid;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRoles();
+        if (Id != null)
+        {
+            await LoadUser();
+        }
+    }
+
+    private async Task LoadRoles()
+    {
+        try
+        {
+            roles = await UserService.GetAllRolesAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Errore durante il caricamento dei ruoli");
+            Snackbar.Add("Errore durante il caricamento dei ruoli", Severity.Error);
+            GoBack();
+        }
+    }
+
+    private async Task LoadUser()
+    {
+        try
+        {
+            var loadedUser = await UserService.GetUserAsync(Id);
+            if (loadedUser == null)
+            {
+                Snackbar.Add("Utente non trovato", Severity.Error);
+                GoBack();
+                return;
+            }
+
+            user = loadedUser;
+            selectedRole = (await UserService.GetUserRolesAsync(user)).FirstOrDefault() ?? "";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Errore durante il caricamento dell'utente");
+            Snackbar.Add("Errore durante il caricamento dell'utente", Severity.Error);
+            GoBack();
+        }
+    }
+
+    private IEnumerable<string> ValidatePassword(string pw)
+    {
+        if (string.IsNullOrWhiteSpace(pw))
+            yield return "La password è obbligatoria";
+        if (pw.Length < 8)
+            yield return "La password deve essere di almeno 8 caratteri";
+        if (!pw.Any(char.IsUpper))
+            yield return "La password deve contenere almeno una lettera maiuscola";
+        if (!pw.Any(char.IsLower))
+            yield return "La password deve contenere almeno una lettera minuscola";
+        if (!pw.Any(char.IsDigit))
+            yield return "La password deve contenere almeno un numero";
+        if (!pw.Any(ch => !char.IsLetterOrDigit(ch)))
+            yield return "La password deve contenere almeno un carattere speciale";
+    }
+
+    private async Task SaveUser()
+    {
+        try
+        {
+            user.UserName = user.Email;
+            bool succeeded;
+            string[] errors;
+
+            if (Id == null)
+            {
+                (succeeded, errors) = await UserService.CreateUserAsync(user, password, selectedRole);
+            }
+            else
+            {
+                (succeeded, errors) = await UserService.UpdateUserAsync(user, selectedRole);
+            }
+
+            if (succeeded)
+            {
+                Snackbar.Add(Id == null ? "Utente creato con successo" : "Utente aggiornato con successo", Severity.Success);
+                GoBack();
+            }
+            else
+            {
+                foreach (var error in errors)
+                {
+                    Snackbar.Add(error, Severity.Error);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Errore durante il salvataggio dell'utente");
+            Snackbar.Add("Errore durante il salvataggio dell'utente", Severity.Error);
+        }
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo("/admin/users");
+    }
+} 

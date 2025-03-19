@@ -107,6 +107,7 @@
 
     private Expense? _expense;
     private bool _isLoading = true;
+    private bool _isAdmin;
 
     protected override async Task OnInitializedAsync()
     {
@@ -122,7 +123,8 @@
                 return;
             }
 
-            _expense = await ExpenseService.GetExpenseAsync(Id, userId);
+            _isAdmin = user.IsInRole("Admin");
+            _expense = await ExpenseService.GetExpenseAsync(Id, userId, _isAdmin);
             if (_expense == null)
             {
                 Snackbar.Add("Spesa non trovata", Severity.Error);
