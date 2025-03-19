@@ -163,7 +163,7 @@ public class CondominiumService
                 .Replace("{{CondominiumName}}", expense.Condominium.Name)
                 .Replace("{{Date}}", expense.Date.ToString("dd/MM/yyyy"))
                 .Replace("{{ApplicationUrl}}", Environment.GetEnvironmentVariable("WWW_DOMAIN") + "/expenses/" + expense.Id);
-            await _emailService.SendEmailAsync(expense.CreatedBy.Email!, "Spesa Approvata - Condominium Manager", emailBody );
+            await _emailService.SendEmailAsync(expense.CreatedBy.Email!, "Spesa Approvata - Condominium Manager", emailBody);
 
             return expense;
         }
@@ -214,4 +214,4 @@ public class CategorySummary
     public ExpenseCategory Category { get; set; }
     public decimal Total { get; set; }
     public int Count { get; set; }
-} 
+}

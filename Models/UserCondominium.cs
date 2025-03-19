@@ -7,7 +7,7 @@ public class UserCondominium
 {
     [Key]
     public string ManagersId { get; set; } = string.Empty;
-    
+
     [Key]
     public int ManagedCondominiumsId { get; set; }
 
@@ -16,4 +16,4 @@ public class UserCondominium
 
     [ForeignKey("ManagedCondominiumsId")]
     public Condominium ManagedCondominium { get; set; } = null!;
-} 
+}

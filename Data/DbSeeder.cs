@@ -129,7 +129,7 @@ public static class DbSeeder
         {
             var existingAssociation = await context.UserCondominiums
                 .FirstOrDefaultAsync(uc => uc.ManagersId == manager1.Id && uc.ManagedCondominiumsId == residenzaSole.Id);
-            
+
             if (existingAssociation == null)
             {
                 context.UserCondominiums.Add(new UserCondominium
@@ -144,7 +144,7 @@ public static class DbSeeder
         {
             var existingAssociation = await context.UserCondominiums
                 .FirstOrDefaultAsync(uc => uc.ManagersId == manager2.Id && uc.ManagedCondominiumsId == villaVerde.Id);
-            
+
             if (existingAssociation == null)
             {
                 context.UserCondominiums.Add(new UserCondominium
@@ -159,7 +159,7 @@ public static class DbSeeder
         {
             var existingAssociation = await context.UserCondominiums
                 .FirstOrDefaultAsync(uc => uc.ManagersId == manager3.Id && uc.ManagedCondominiumsId == palazzoModerno.Id);
-            
+
             if (existingAssociation == null)
             {
                 context.UserCondominiums.Add(new UserCondominium
@@ -271,4 +271,4 @@ public static class DbSeeder
             }
         }
     }
-} 
+}

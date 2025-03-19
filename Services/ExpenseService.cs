@@ -20,7 +20,7 @@ public class ExpenseService
         _context = context;
         _logger = logger;
         _uploadPath = Path.Combine(environment.WebRootPath ?? "wwwroot", "uploads");
-        
+
         // Crea la directory se non esiste
         if (!Directory.Exists(_uploadPath))
         {
@@ -67,7 +67,7 @@ public class ExpenseService
         try
         {
             _logger.LogInformation($"Inizio creazione spesa per l'utente {expense.CreatedById}");
-            
+
             var user = await _context.Users
                 .AsNoTracking()
                 .Include(u => u.ManagedCondominiums)
@@ -99,7 +99,7 @@ public class ExpenseService
             {
                 await SaveFileAsync(expense, file, user);
             }
-            
+
             _logger.LogInformation($"Spesa creata con successo: {expense.Id}");
             return expense;
         }
@@ -247,4 +247,4 @@ public class ExpenseService
             throw;
         }
     }
-} 
+}

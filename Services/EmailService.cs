@@ -20,7 +20,7 @@ public class EmailService
     {
         _configuration = configuration;
         _logger = logger;
-        
+
         _smtpServer = Environment.GetEnvironmentVariable("SMTP_SERVER");
         _smtpPort = int.Parse(Environment.GetEnvironmentVariable("SMTP_PORT") ?? "587");
         _smtpUsername = Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? throw new InvalidOperationException("SMTP_USERNAME non configurato");
@@ -87,4 +87,4 @@ public class EmailService
             throw;
         }
     }
-} 
+}

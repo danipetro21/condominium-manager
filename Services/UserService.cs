@@ -68,7 +68,7 @@ public class UserService
     {
         var currentRoles = await _userManager.GetRolesAsync(user);
         var result = await _userManager.UpdateAsync(user);
-        
+
         if (!result.Succeeded)
         {
             return (false, result.Errors.Select(e => e.Description).ToArray());
@@ -100,4 +100,4 @@ public class UserService
         var result = await _userManager.DeleteAsync(user);
         return (result.Succeeded, result.Errors.Select(e => e.Description).ToArray());
     }
-} 
+}

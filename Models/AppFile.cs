@@ -22,7 +22,7 @@ public class AppFile
     public string UploadedById { get; set; } = string.Empty;
     public ApplicationUser? UploadedBy { get; set; }
 
-    public string EntityType { get; set; } = string.Empty; 
-    public int EntityId { get; set; }   
+    public string EntityType { get; set; } = string.Empty;
+    public int EntityId { get; set; }
 
-}   
+}

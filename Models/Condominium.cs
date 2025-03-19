@@ -36,4 +36,4 @@ namespace cem.Models
         // Relazione con i gestori del condominio
         public virtual ICollection<ApplicationUser> Managers { get; set; } = new List<ApplicationUser>();
     }
-} 
+}

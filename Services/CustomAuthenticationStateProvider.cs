@@ -108,4 +108,4 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
 
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
     }
-} 
+}
