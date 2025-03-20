@@ -8,8 +8,7 @@ Un'applicazione web moderna per la gestione completa dei condomini, sviluppata c
 - Autenticazione ASP.NET Core Identity
 - Autorizzazione basata su ruoli (RBAC)
 - Protezione CSRF
-- Password hashing con BCrypt
-- Refresh token per sessioni sicure
+- Refresh token
 
 ### ⚙️ Backend
 - ASP.NET Core 8.0
@@ -18,17 +17,16 @@ Un'applicazione web moderna per la gestione completa dei condomini, sviluppata c
 - Blazor Server
 - MudBlazor per l'interfaccia utente
 
-## Email Service
+### Email Service
 - mailersend.com
 
 ### 📊 Funzionalità Core
 - Gestione completa delle spese condominiali
-- Sistema di notifiche in tempo reale
-- Generazione automatica di report PDF
+- Sistema di notifiche
+- Generazione di report PDF
 - Gestione file con upload multiplo
 - Sistema di comunicazioni condominiali
 - Calcolo automatico delle quote condominiali
-- Export dati in vari formati (CSV, Excel, PDF)
 
 ## 🚀 Requisiti di Sistema
 
