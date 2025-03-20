@@ -41,7 +41,7 @@ Un'applicazione web moderna per la gestione completa dei condomini, sviluppata c
 
 1. Clona il repository:
    ```bash
-   git clone https://github.com/yourusername/condominium-manager.git
+   git clone https://github.com/danipetro21/condominium-manager.git
    cd condominium-manager
    ```
 
