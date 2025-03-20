@@ -14,11 +14,13 @@ public class CondominiumService
     public CondominiumService(
         ApplicationDbContext context,
         ILogger<CondominiumService> logger,
-        IWebHostEnvironment environment)
+        IWebHostEnvironment environment,
+        EmailService EmailService)
     {
         _context = context;
         _logger = logger;
         _uploadPath = Path.Combine(environment.WebRootPath ?? "wwwroot", "uploads");
+        _emailService = EmailService;
     }
 
     public async Task<List<Condominium>> GetUserCondominiumsAsync(string userId, bool isAdmin = false)
@@ -141,20 +143,54 @@ public class CondominiumService
     {
         try
         {
-            var expense = await _context.Expenses.FindAsync(expenseId);
+            _logger.LogInformation("Tentativo di approvazione della spesa: {ExpenseId}", expenseId);
+
+            // Recupera la spesa dal database, includendo le relazioni necessarie
+            var expense = await _context.Expenses
+                .Include(e => e.CreatedBy) // Carica l'utente che ha creato la spesa
+                .Include(e => e.Condominium) // Carica il condominio associato alla spesa
+                .FirstOrDefaultAsync(e => e.Id == expenseId);
+
             if (expense == null)
             {
+                _logger.LogError("Spesa non trovata: {ExpenseId}", expenseId);
                 throw new ArgumentException("Spesa non trovata");
             }
 
+            // Verifica che CreatedBy e Condominium siano stati caricati correttamente
+            if (expense.CreatedBy == null)
+            {
+                _logger.LogError("Utente creatore non trovato per la spesa: {ExpenseId}", expenseId);
+                throw new ArgumentException("Utente creatore non trovato");
+            }
+
+            if (expense.Condominium == null)
+            {
+                _logger.LogError("Condominio non trovato per la spesa: {ExpenseId}", expenseId);
+                throw new ArgumentException("Condominio non trovato");
+            }
+
+            // Approva la spesa
             expense.Status = ExpenseStatus.Approved;
             expense.ApprovedById = approverId;
             expense.ApprovedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+            _logger.LogInformation("Spesa approvata con successo: {ExpenseId}", expenseId);
 
+            // Carica il template dell'email
             var templatePath = Path.Combine("wwwroot", "email", "expense-approved.html");
+            _logger.LogInformation("Percorso del template email: {TemplatePath}", templatePath);
+
+            if (!File.Exists(templatePath))
+            {
+                _logger.LogError("Template email non trovato: {TemplatePath}", templatePath);
+                throw new FileNotFoundException("Template email non trovato", templatePath);
+            }
+
             var template = await File.ReadAllTextAsync(templatePath);
+            _logger.LogInformation("Template email caricato correttamente: {TemplatePath}", templatePath);
+
             var emailBody = template
                 .Replace("{{FirstName}}", expense.CreatedBy.FirstName)
                 .Replace("{{LastName}}", expense.CreatedBy.LastName)
@@ -163,7 +199,18 @@ public class CondominiumService
                 .Replace("{{CondominiumName}}", expense.Condominium.Name)
                 .Replace("{{Date}}", expense.Date.ToString("dd/MM/yyyy"))
                 .Replace("{{ApplicationUrl}}", Environment.GetEnvironmentVariable("WWW_DOMAIN") + "/expenses/" + expense.Id);
-            await _emailService.SendEmailAsync(expense.CreatedBy.Email!, "Spesa Approvata - Condominium Manager", emailBody);
+
+            _logger.LogInformation("Invio email in corso per la spesa: {ExpenseId}, Destinatario: {Email}",
+                expenseId, expense.CreatedBy.Email);
+
+            // Invia l'email
+            await _emailService.SendEmailAsync(
+                Environment.GetEnvironmentVariable("TEST_EMAIL"),
+                "Spesa Approvata - Condominium Manager",
+                emailBody
+            );
+
+            _logger.LogInformation("Email inviata con successo per la spesa: {ExpenseId}", expenseId);
 
             return expense;
         }

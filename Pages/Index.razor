@@ -4,8 +4,39 @@
 <PageTitle>Home</PageTitle>
 
 <MudContainer>
-    <MudText Typo="Typo.h3" Class="mb-4">Benvenuto in CEM</MudText>
-    <MudText Typo="Typo.body1">
+    <MudGrid>
+        <MudItem xs="12" Class="text-center">
+            <MudIcon Icon="@Icons.Material.Filled.Home" Size="Size.Large" Color="Color.Primary" Class="mb-4 animate__animated animate__bounceIn" />
+        </MudItem>
+    </MudGrid>
+    <MudText Typo="Typo.h3" Class="mb-4 text-center animate__animated animate__fadeIn">Benvenuto in CEM</MudText>
+    <MudText Typo="Typo.body1" Class="text-center mb-4 animate__animated animate__fadeIn">
         Sistema di gestione condominiale
     </MudText>
+    <MudGrid Class="mt-6">
+        <MudItem xs="12" md="6" Class="mx-auto">
+            <MudCard>
+                <MudCardHeader>
+                    <MudText Typo="Typo.h6">Funzionalità Principali</MudText>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudList T="string">
+                        <MudListItem T="string">
+                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Class="mr-2" />
+                            Gestione delle spese condominiali
+                        </MudListItem>
+                        <MudListItem T="string">
+                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Class="mr-2" />
+                            Notifiche tra residenti e amministratori
+                        </MudListItem>
+                        <MudListItem T="string">
+                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Class="mr-2" />
+                            Generatore di report
+                        </MudListItem>
+                    </MudList>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
 </MudContainer>
+
