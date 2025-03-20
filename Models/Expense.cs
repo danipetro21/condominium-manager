@@ -39,7 +39,7 @@ namespace cem.Models
         public ApplicationUser? ApprovedBy { get; set; }
         public int CondominiumId { get; set; }
         public Condominium Condominium { get; set; } = null!;
-        
+
         // Relazione con i file
         public virtual ICollection<AppFile> Files { get; set; } = new List<AppFile>();
     }
@@ -52,4 +52,4 @@ namespace cem.Models
         Assicurazione,
         Altro
     }
-} 
+}

@@ -16,4 +16,4 @@ public class ApplicationUser : IdentityUser
     public virtual ICollection<Expense> ApprovedExpenses { get; set; } = new List<Expense>();
     public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     public virtual ICollection<AppFile> Files { get; set; } = new List<AppFile>();
-} 
+}

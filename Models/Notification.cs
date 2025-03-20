@@ -35,4 +35,4 @@ namespace cem.Models
         public int? ExpenseId { get; set; }
         public virtual Expense? Expense { get; set; }
     }
-} 
+}

@@ -18,6 +18,9 @@ Un'applicazione web moderna per la gestione completa dei condomini, sviluppata c
 - Blazor Server
 - MudBlazor per l'interfaccia utente
 
+## Email Service
+- mailersend.com
+
 ### 📊 Funzionalità Core
 - Gestione completa delle spese condominiali
 - Sistema di notifiche in tempo reale

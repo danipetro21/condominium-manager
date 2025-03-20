@@ -20,7 +20,7 @@ public class ExpenseService
         _context = context;
         _logger = logger;
         _uploadPath = Path.Combine(environment.WebRootPath ?? "wwwroot", "uploads");
-        
+
         // Crea la directory se non esiste
         if (!Directory.Exists(_uploadPath))
         {
@@ -67,8 +67,7 @@ public class ExpenseService
         try
         {
             _logger.LogInformation($"Inizio creazione spesa per l'utente {expense.CreatedById}");
-            
-            // Verifica che l'utente abbia accesso al condominio
+
             var user = await _context.Users
                 .AsNoTracking()
                 .Include(u => u.ManagedCondominiums)
@@ -89,7 +88,6 @@ public class ExpenseService
                 throw new ArgumentException("L'utente non ha accesso a questo condominio");
             }
 
-            // Imposta la data di creazione
             expense.CreatedAt = DateTime.UtcNow;
             expense.Status = ExpenseStatus.Pending;
 
@@ -97,12 +95,11 @@ public class ExpenseService
             _context.Expenses.Add(expense);
             await _context.SaveChangesAsync();
 
-            // Gestione del file se presente
             if (file != null)
             {
                 await SaveFileAsync(expense, file, user);
             }
-            
+
             _logger.LogInformation($"Spesa creata con successo: {expense.Id}");
             return expense;
         }
@@ -124,10 +121,8 @@ public class ExpenseService
         _context.Entry(expense).State = EntityState.Modified;
         await _context.SaveChangesAsync();
 
-        // Gestione del file se presente
         if (file != null)
         {
-            // Rimuovi i file esistenti
             foreach (var existingFile in expense.Files)
             {
                 var filePath = Path.Combine(_uploadPath, existingFile.FilePath);
@@ -139,7 +134,6 @@ public class ExpenseService
             }
             await _context.SaveChangesAsync();
 
-            // Salva il nuovo file
             await SaveFileAsync(expense, file, user);
         }
 
@@ -150,7 +144,6 @@ public class ExpenseService
     {
         try
         {
-            // Genera un nome file univoco
             var fileName = $"{Guid.NewGuid()}_{file.Name}";
             var filePath = Path.Combine(_uploadPath, fileName);
 
@@ -159,7 +152,6 @@ public class ExpenseService
                 await file.OpenReadStream(10 * 1024 * 1024).CopyToAsync(stream);
             }
 
-            // Crea il record del file nel database
             var appFile = new AppFile
             {
                 FileName = file.Name,
@@ -191,7 +183,6 @@ public class ExpenseService
             return false;
         }
 
-        // Rimuovi i file fisici
         foreach (var file in expense.Files)
         {
             var filePath = Path.Combine(_uploadPath, file.FilePath);
@@ -242,7 +233,6 @@ public class ExpenseService
     {
         try
         {
-            // Creiamo una nuova query per evitare problemi di concorrenza
             var query = _context.UserCondominiums
                 .AsNoTracking()
                 .Include(uc => uc.ManagedCondominium)
@@ -257,4 +247,4 @@ public class ExpenseService
             throw;
         }
     }
-} 
+}

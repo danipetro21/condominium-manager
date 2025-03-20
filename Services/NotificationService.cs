@@ -107,7 +107,7 @@ public class NotificationService
         try
         {
             var user = await _context.Users.FindAsync(userId) ?? throw new InvalidOperationException("Utente non trovato");
-            
+
             var notification = new Notification
             {
                 Title = title,
@@ -129,4 +129,4 @@ public class NotificationService
             throw;
         }
     }
-} 
+}

@@ -21,4 +21,4 @@ public class AuthService
     {
         await _signInManager.SignOutAsync();
     }
-} 
+}
